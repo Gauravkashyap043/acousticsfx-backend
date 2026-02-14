@@ -12,4 +12,18 @@ export const env = {
   MONGODB_URI: requireEnv('MONGODB_URI'),
   JWT_SECRET: requireEnv('JWT_SECRET'),
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN ?? '7d',
+  /** Base URL of admin app for reset link (e.g. https://admin.acousticsfx.com). Required for forgot-password email. */
+  ADMIN_RESET_BASE_URL: process.env.ADMIN_RESET_BASE_URL ?? 'http://localhost:5173',
+  /** Optional SMTP; if unset, reset link is logged to console only (dev). */
+  SMTP_HOST: process.env.SMTP_HOST,
+  SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASS: process.env.SMTP_PASS,
+  /** From address for reset emails */
+  SMTP_FROM: process.env.SMTP_FROM ?? 'AcousticsFX Admin <noreply@acousticsfx.com>',
+  /** ImageKit: private API key for server-side uploads. Required for POST /api/admin/upload-image. */
+  IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY,
+  /** Optional folder path in ImageKit (e.g. "acousticsfx/products"). */
+  IMAGEKIT_UPLOAD_FOLDER: process.env.IMAGEKIT_UPLOAD_FOLDER ?? 'acousticsfx',
 } as const;

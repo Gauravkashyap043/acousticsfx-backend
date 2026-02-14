@@ -102,6 +102,8 @@ src/
 
 To add a role or permission: edit `src/lib/permissions.ts` (ROLE_PERMISSIONS and PERMISSIONS).
 
+**Super-admin invariant:** At least one `super_admin` must always exist. When adding admin/user CRUD (e.g. delete admin or update role), call `assertAtLeastOneSuperAdminRemains(getAdminCollection(), adminIdBeingRemovedOrDemoted)` from `src/lib/superAdminGuard.ts` before performing the operation; it throws if the operation would leave zero super_admins.
+
 ## Conventions
 
 - **ESM**: All relative imports use `.js` extension (e.g. `from './config/db.js'`).

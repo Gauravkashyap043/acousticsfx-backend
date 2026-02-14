@@ -7,6 +7,10 @@ import type { AdminRole } from '../types/index.js';
 export const PERMISSIONS = {
   CONTENT_READ: 'content:read',
   CONTENT_WRITE: 'content:write',
+  PRODUCTS_READ: 'products:read',
+  PRODUCTS_WRITE: 'products:write',
+  RESOURCES_READ: 'resources:read',
+  RESOURCES_WRITE: 'resources:write',
   USERS_READ: 'users:read',
   USERS_WRITE: 'users:write',
   SYSTEM_MANAGE: 'system:manage',
@@ -16,16 +20,31 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 /** Role → list of permissions. To add a role: add key here and assign permissions. */
 const ROLE_PERMISSIONS: Record<AdminRole, readonly Permission[]> = {
-  editor: [PERMISSIONS.CONTENT_READ, PERMISSIONS.CONTENT_WRITE],
+  editor: [
+    PERMISSIONS.CONTENT_READ,
+    PERMISSIONS.CONTENT_WRITE,
+    PERMISSIONS.PRODUCTS_READ,
+    PERMISSIONS.PRODUCTS_WRITE,
+    PERMISSIONS.RESOURCES_READ,
+    PERMISSIONS.RESOURCES_WRITE,
+  ],
   admin: [
     PERMISSIONS.CONTENT_READ,
     PERMISSIONS.CONTENT_WRITE,
+    PERMISSIONS.PRODUCTS_READ,
+    PERMISSIONS.PRODUCTS_WRITE,
+    PERMISSIONS.RESOURCES_READ,
+    PERMISSIONS.RESOURCES_WRITE,
     PERMISSIONS.USERS_READ,
     PERMISSIONS.USERS_WRITE,
   ],
   super_admin: [
     PERMISSIONS.CONTENT_READ,
     PERMISSIONS.CONTENT_WRITE,
+    PERMISSIONS.PRODUCTS_READ,
+    PERMISSIONS.PRODUCTS_WRITE,
+    PERMISSIONS.RESOURCES_READ,
+    PERMISSIONS.RESOURCES_WRITE,
     PERMISSIONS.USERS_READ,
     PERMISSIONS.USERS_WRITE,
     PERMISSIONS.SYSTEM_MANAGE,
