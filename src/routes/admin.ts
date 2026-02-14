@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import * as adminController from '../controllers/adminController.js';
 import * as adminsController from '../controllers/adminsController.js';
+import * as contactController from '../controllers/contactController.js';
+import * as newsletterController from '../controllers/newsletterController.js';
 import * as productController from '../controllers/productController.js';
 import * as resourceController from '../controllers/resourceController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
@@ -121,6 +123,20 @@ router.delete(
   '/products/:id',
   requirePermission(PERMISSIONS.PRODUCTS_WRITE),
   productController.deleteProduct
+);
+
+/** List contact form submissions. Requires content:read */
+router.get(
+  '/contact-submissions',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  contactController.list
+);
+
+/** List newsletter subscriptions. Requires content:read */
+router.get(
+  '/newsletter-subscriptions',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  newsletterController.list
 );
 
 /** List all content (paginated). Requires content:read */

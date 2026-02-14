@@ -36,6 +36,8 @@ export interface Blog {
   slug: string;
   title: string;
   excerpt?: string;
+  /** HTML body for detail page */
+  content?: string;
   heroImage: string;
   authorName: string;
   authorImage?: string;
@@ -90,6 +92,24 @@ export interface Product {
   order?: number;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+/** Contact form submission from the public site */
+export interface ContactSubmission {
+  _id?: ObjectId;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  createdAt: Date;
+}
+
+/** Newsletter signup from the public site */
+export interface NewsletterSubscription {
+  _id?: ObjectId;
+  email: string;
+  createdAt: Date;
 }
 
 /** Site content entry: key-value with optional type and audit fields */

@@ -82,10 +82,11 @@ function validateBlogBody(body: Record<string, unknown>): Omit<Blog, '_id' | 'cr
   const heroImage = typeof body.heroImage === 'string' ? body.heroImage.trim() : '';
   const authorName = typeof body.authorName === 'string' ? body.authorName.trim() : '';
   const excerpt = typeof body.excerpt === 'string' ? body.excerpt.trim() : undefined;
+  const content = typeof body.content === 'string' ? body.content : undefined;
   const authorImage = typeof body.authorImage === 'string' ? body.authorImage.trim() : undefined;
   const tags = Array.isArray(body.tags) ? (body.tags as string[]).filter((t) => typeof t === 'string') : undefined;
   const publishedAt = body.publishedAt ? new Date(body.publishedAt as string) : undefined;
-  return { slug, title, excerpt, heroImage, authorName, authorImage, tags, publishedAt };
+  return { slug, title, excerpt, content, heroImage, authorName, authorImage, tags, publishedAt };
 }
 
 export async function listBlogsAdmin(req: Request, res: Response): Promise<void> {

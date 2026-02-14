@@ -9,7 +9,8 @@
     "start": "node dist/index.js",
     "seed": "tsx src/scripts/seedAdmin.ts",
     "seed:content": "tsx src/scripts/seedContent.ts",
-    "seed:products": "tsx src/scripts/seedProducts.ts"
+    "seed:products": "tsx src/scripts/seedProducts.ts",
+    "migrate:blogs": "tsx src/scripts/migrateFrontendBlogs.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

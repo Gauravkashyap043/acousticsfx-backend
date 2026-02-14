@@ -8,6 +8,7 @@ export const DASHBOARD_TAB_KEYS = [
   'products',
   'testimonials',
   'contact',
+  'newsletter',
   'blogs',
   'content',
   'case-studies',

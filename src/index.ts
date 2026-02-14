@@ -8,6 +8,8 @@ import productRoutes from './routes/products.js';
 import resourceRoutes from './routes/resources.js';
 import blogRoutes from './routes/blogs.js';
 import adminRoutes from './routes/admin.js';
+import contactRoutes from './routes/contact.js';
+import newsletterRoutes from './routes/newsletter.js';
 
 const app = express();
 
@@ -24,6 +26,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 async function start(): Promise<void> {
   await connectDb();

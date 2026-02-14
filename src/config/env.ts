@@ -22,8 +22,4 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS,
   /** From address for reset emails */
   SMTP_FROM: process.env.SMTP_FROM ?? 'AcousticsFX Admin <noreply@acousticsfx.com>',
-  /** ImageKit: private API key for server-side uploads. Required for POST /api/admin/upload-image. */
-  IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY,
-  /** Optional folder path in ImageKit (e.g. "acousticsfx/products"). */
-  IMAGEKIT_UPLOAD_FOLDER: process.env.IMAGEKIT_UPLOAD_FOLDER ?? 'acousticsfx',
 } as const;
