@@ -17,6 +17,7 @@ Express API for AcousticsFX: MongoDB persistence and JWT-based admin authenticat
 | `npm run build` | Compile to `dist/` |
 | `npm run start` | Run `node dist/index.js` |
 | `npm run seed` | Seed default admin (see [Seeding](#seeding)) |
+| `npm run seed:content` | Seed default content keys (idempotent; see [Content seeding](#content-seeding)) |
 
 ## Environment
 
@@ -40,63 +41,95 @@ src/
 │   ├── db.ts             # MongoClient, connectDb(), disconnectDb(), getDb()
 │   └── env.ts            # Env validation and export
 ├── types/
-│   └── index.ts          # Admin, JwtPayload, Express.Request.admin
+│   └── index.ts          # Admin, AdminRole, Content, JwtPayload, Request.admin
+├── lib/
+│   └── permissions.ts    # can(role, permission), PERMISSIONS, role → permissions
 ├── models/
-│   └── Admin.ts          # getAdminCollection() → Collection<Admin>
+│   ├── Admin.ts          # getAdminCollection() → Collection<Admin>
+│   └── Content.ts        # getContentCollection() → Collection<Content>
 ├── controllers/
-│   └── authController.ts # login(), me()
+│   ├── authController.ts # login(), me()
+│   ├── contentController.ts  # getByKeys() — public content read
+│   └── adminController.ts    # listContent, getContentByKey, upsertContent, deleteContent
 ├── middleware/
-│   └── auth.ts           # requireAuth: Bearer JWT → req.admin
+│   └── auth.ts           # requireAuth, requirePermission(permission)
 ├── routes/
-│   └── auth.ts           # POST /login, GET /me (requireAuth)
+│   ├── auth.ts           # POST /login, GET /me (requireAuth)
+│   ├── content.ts        # GET /api/content?keys=...
+│   └── admin.ts          # GET/PUT/DELETE /api/admin/content (requireAuth + requirePermission)
 └── scripts/
-    └── seedAdmin.ts      # One-off seed script
+    ├── seedAdmin.ts      # One-off seed script (creates admin with role super_admin)
+    └── migrateAdminRoles.ts  # One-off: set role for existing admins missing role
 ```
 
 ## API
 
 ### Health
 
-- **GET** `/api/health` — `{ status: "ok" }` (no auth)
+- **GET** `/health` — `{ status: "ok" }` (no auth)
 
 ### Auth (prefix `/api/auth`)
 
 - **POST** `/api/auth/login`  
   Body: `{ email: string, password: string }`  
-  Success: `200` `{ token: string, admin: { id, email } }`  
+  Success: `200` `{ token: string, admin: { id, email, role } }`  
   Errors: `400` (missing/invalid body), `401` (invalid credentials), `500`
 
 - **GET** `/api/auth/me`  
   Header: `Authorization: Bearer <token>`  
-  Success: `200` `{ admin: { id, email } }`  
+  Success: `200` `{ admin: { id, email, role } }`  
   Errors: `401` (no token / invalid / expired)
+
+### Content (prefix `/api/content`) — public
+
+- **GET** `/api/content?keys=key1,key2`  
+  No auth. Returns `{ [key: string]: { value: string, type?: "text" | "image" } }` for requested keys. Keys not found are omitted. Key naming: use dot notation, e.g. `home.hero.title`, `about.hero.heading`.
+
+### Admin (prefix `/api/admin`) — all require `Authorization: Bearer <token>`
+
+- **GET** `/api/admin/content?limit=50&skip=0` — List content (paginated). Requires `content:read`.
+- **GET** `/api/admin/content/:key` — Get one entry. Requires `content:read`.
+- **PUT** `/api/admin/content/:key` — Upsert. Body: `{ value: string, type?: "text" | "image" }`. Requires `content:write`.
+- **DELETE** `/api/admin/content/:key` — Delete entry. Requires `content:write`.
+
+## Roles and permissions
+
+| Role        | content:read | content:write | users:read | users:write | system:manage |
+|------------|--------------|---------------|------------|-------------|---------------|
+| editor     | ✓            | ✓             | —          | —           | —             |
+| admin      | ✓            | ✓             | ✓          | ✓           | —             |
+| super_admin| ✓            | ✓             | ✓          | ✓           | ✓             |
+
+To add a role or permission: edit `src/lib/permissions.ts` (ROLE_PERMISSIONS and PERMISSIONS).
 
 ## Conventions
 
 - **ESM**: All relative imports use `.js` extension (e.g. `from './config/db.js'`).
 - **DB access**: Use `getDb()` from `config/db.js`; models expose `getXCollection()` returning typed `Collection<Type>`.
-- **Auth**: Protected handlers rely on `requireAuth`; after that `req.admin` is `{ id: string, email: string }` (from JWT `sub` and `email`).
-- **Responses**: JSON; errors use `{ error: string }`. Use 400 for validation, 401 for auth, 500 for server errors.
-- **New routes**: Add router in `src/routes/`, mount in `src/index.ts` with `app.use('/api/...', routes)`.
+- **Auth**: Protected handlers use `requireAuth`; then `req.admin` is `{ id, email, role }`. Use `requirePermission('permission:name')` for role-based access.
+- **Responses**: JSON; errors use `{ error: string }`. Use 400 validation, 401 unauthorized, 403 forbidden, 500 server.
+- **New routes**: Add router in `src/routes/`, mount in `index.ts`. For admin-only: mount under `/api/admin` with `requireAuth` and `requirePermission(...)`.
 
 ## Types
 
-- **Admin** (`types/index.ts`): `_id?`, `email`, `passwordHash`, `createdAt`.
-- **JwtPayload**: `sub` (admin id), `email`, optional `iat`/`exp`.
-- **Express.Request**: Augmented with `admin?: { id, email }` (set by `requireAuth`).
+- **Admin**: `_id?`, `email`, `passwordHash`, `role?: AdminRole`, `createdAt`.
+- **AdminRole**: `'super_admin' | 'admin' | 'editor'`.
+- **Content**: `key`, `value`, `type?`, `updatedAt?`, `updatedBy?`.
+- **JwtPayload**: `sub`, `email`, `role?`, optional `iat`/`exp`.
+- **Express.Request**: `admin?: { id, email, role }` (set by `requireAuth`).
 
 ## Seeding
 
-`npm run seed` runs `src/scripts/seedAdmin.ts`:
+- **`npm run seed`**: Creates admin `admin@acousticsfx.com` / `acoustic1234` with `role: 'super_admin'` if not present.
+- **Existing admins without role**: run `npx tsx src/scripts/migrateAdminRoles.ts` once to set `role: 'super_admin'`.
 
-- Connects to DB, checks for existing admin with email `admin@acousticsfx.com`.
-- If none: creates one with password `acoustic1234` (bcrypt, 10 rounds), then exits.
-- If exists: logs and exits. No `.env` changes; ensure `MONGODB_URI` and `JWT_SECRET` are set.
+### Content seeding
+
+- **`npm run seed:content`**: Inserts default content keys only when each key does not already exist (idempotent). Does not overwrite existing values. Default keys include `home.hero.title`, `home.hero.subtitle`, `home.hero.backgroundImage`, `about.hero.heading`, `about.hero.subtitle`, `about.hero.backgroundImage`. Safe to run multiple times; logs "Inserted: N, skipped: M".
 
 ## Adding a new resource
 
 1. **Types**: Add interface in `src/types/index.ts` if shared.
-2. **Model**: e.g. `src/models/Resource.ts` with `getResourceCollection()` using `getDb().collection<Resource>('resources')`.
-3. **Controller**: Handlers in `src/controllers/` (e.g. `resourceController.ts`).
-4. **Routes**: New router in `src/routes/`, mount in `index.ts` (e.g. `app.use('/api/resources', resourceRoutes)`).
-5. **Auth**: Use `requireAuth` middleware for any protected route.
+2. **Model**: e.g. `src/models/Resource.ts` with `getResourceCollection()`.
+3. **Controller**: Handlers in `src/controllers/` (use `adminController` for protected admin actions).
+4. **Routes**: Mount in `index.ts`. Protected: use `requireAuth` and `requirePermission(...)`.

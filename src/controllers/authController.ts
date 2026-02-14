@@ -5,6 +5,12 @@ import { getAdminCollection } from '../models/Admin.js';
 import { env } from '../config/env.js';
 import type { JwtPayload } from '../types/index.js';
 
+const DEFAULT_ROLE = 'super_admin' as const;
+
+/**
+ * Login: validates email/password, returns JWT and admin (id, email, role).
+ * Role is read from DB; missing role defaults to super_admin for backward compatibility.
+ */
 export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body as { email?: string; password?: string };
@@ -34,9 +40,11 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    const role = admin.role ?? DEFAULT_ROLE;
     const payload: JwtPayload = {
       sub: admin._id!.toString(),
       email: admin.email,
+      role,
     };
 
     const token = jwt.sign(
@@ -47,7 +55,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     res.json({
       token,
-      admin: { id: admin._id!.toString(), email: admin.email },
+      admin: { id: admin._id!.toString(), email: admin.email, role },
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -55,6 +63,7 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 }
 
+/** Returns current admin from JWT (id, email, role). */
 export async function me(req: Request, res: Response): Promise<void> {
   if (!req.admin) {
     res.status(401).json({ error: 'Unauthorized' });

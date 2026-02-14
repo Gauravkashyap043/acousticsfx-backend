@@ -22,6 +22,7 @@ async function seed(): Promise<void> {
   await admins.insertOne({
     email: DEFAULT_EMAIL,
     passwordHash,
+    role: 'super_admin',
     createdAt: new Date(),
   });
 
