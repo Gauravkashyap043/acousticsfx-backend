@@ -5,12 +5,30 @@ import * as contactController from '../controllers/contactController.js';
 import * as newsletterController from '../controllers/newsletterController.js';
 import * as productController from '../controllers/productController.js';
 import * as resourceController from '../controllers/resourceController.js';
+import * as uploadController from '../controllers/uploadController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
+import { uploadImageMiddleware } from '../middleware/upload.js';
 import { PERMISSIONS } from '../lib/permissions.js';
 
 const router = Router();
 
 router.use(requireAuth);
+
+/** Upload image to ImageKit. Requires resources:write. */
+router.post(
+  '/upload-image',
+  requirePermission(PERMISSIONS.RESOURCES_WRITE),
+  (req, res, next) => {
+    uploadImageMiddleware(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ error: err.message || 'Invalid file' });
+        return;
+      }
+      next();
+    });
+  },
+  uploadController.uploadImage
+);
 
 /** Admins CRUD – requires SYSTEM_MANAGE (super_admin only) */
 router.get(
