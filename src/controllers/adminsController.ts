@@ -117,7 +117,14 @@ export async function update(req: Request, res: Response): Promise<void> {
       return;
     }
     if (existing.role === 'super_admin' && role !== 'super_admin') {
-      await assertAtLeastOneSuperAdminRemains(admins, id);
+      try {
+        await assertAtLeastOneSuperAdminRemains(admins, id);
+      } catch (err) {
+        res.status(409).json({
+          error: err instanceof Error ? err.message : 'At least one super_admin must always exist.',
+        });
+        return;
+      }
     }
     updates.role = role;
   }
@@ -171,7 +178,14 @@ export async function remove(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  await assertAtLeastOneSuperAdminRemains(admins, id);
+  try {
+    await assertAtLeastOneSuperAdminRemains(admins, id);
+  } catch (err) {
+    res.status(409).json({
+      error: err instanceof Error ? err.message : 'At least one super_admin must always exist.',
+    });
+    return;
+  }
   await admins.deleteOne({ _id: new ObjectId(id) });
   res.status(204).send();
 }
