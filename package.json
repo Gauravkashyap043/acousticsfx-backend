@@ -14,6 +14,9 @@
     "seed:blogs": "tsx src/scripts/seedBlogs.ts",
     "seed:testimonials": "tsx src/scripts/seedTestimonials.ts",
     "seed:trusted-partners": "tsx src/scripts/seedTrustedPartners.ts",
+    "seed:faqs": "tsx src/scripts/seedFaqs.ts",
+    "seed:footer-links": "tsx src/scripts/seedFooterLinks.ts",
+    "seed:locations": "tsx src/scripts/seedLocations.ts",
     "migrate:blogs": "tsx src/scripts/migrateFrontendBlogs.ts"
   },
   "dependencies": {

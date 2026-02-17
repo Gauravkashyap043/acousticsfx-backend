@@ -10,6 +10,9 @@ import * as testimonialController from '../controllers/testimonialController.js'
 import * as uploadController from '../controllers/uploadController.js';
 import * as clientLogoController from '../controllers/clientLogoController.js';
 import * as trustedPartnerController from '../controllers/trustedPartnerController.js';
+import * as footerLinkController from '../controllers/footerLinkController.js';
+import * as locationController from '../controllers/locationController.js';
+import * as faqController from '../controllers/faqController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { uploadImageMiddleware } from '../middleware/upload.js';
 import { PERMISSIONS } from '../lib/permissions.js';
@@ -233,6 +236,72 @@ router.delete(
   '/trusted-partners/:id',
   requirePermission(PERMISSIONS.CONTENT_WRITE),
   trustedPartnerController.remove
+);
+
+/** Footer links CRUD */
+router.get(
+  '/footer-links',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  footerLinkController.listAdmin
+);
+router.post(
+  '/footer-links',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  footerLinkController.create
+);
+router.put(
+  '/footer-links/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  footerLinkController.update
+);
+router.delete(
+  '/footer-links/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  footerLinkController.remove
+);
+
+/** Locations CRUD */
+router.get(
+  '/locations',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  locationController.listAdmin
+);
+router.post(
+  '/locations',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  locationController.create
+);
+router.put(
+  '/locations/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  locationController.update
+);
+router.delete(
+  '/locations/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  locationController.remove
+);
+
+/** FAQs CRUD */
+router.get(
+  '/faqs',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  faqController.listAdmin
+);
+router.post(
+  '/faqs',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  faqController.create
+);
+router.put(
+  '/faqs/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  faqController.update
+);
+router.delete(
+  '/faqs/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  faqController.remove
 );
 
 /** List contact form submissions. Requires content:read */

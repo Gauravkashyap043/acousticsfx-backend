@@ -169,6 +169,41 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     type: 'image',
   },
   {
+    key: 'footer.about',
+    value: 'Its your premier destination for luxury and modern interior design',
+    type: 'text',
+  },
+  {
+    key: 'footer.copyright',
+    value: '© Copyright 2025 FX Acoustic Solution — All Rights Reserved.',
+    type: 'text',
+  },
+  {
+    key: 'footer.contactEmail',
+    value: 'email@gmail.com',
+    type: 'text',
+  },
+  {
+    key: 'footer.contactAddress1',
+    value: 'Design Avenue Cityville, CA 90210 United States',
+    type: 'text',
+  },
+  {
+    key: 'footer.contactAddress2',
+    value: 'Design Avenue Cityville, CA 90210 United States',
+    type: 'text',
+  },
+  {
+    key: 'contact.locations.title',
+    value: 'A Space That Inspires',
+    type: 'text',
+  },
+  {
+    key: 'contact.locations.description',
+    value: 'You wish to visit our place and sit with us on a coffee.',
+    type: 'text',
+  },
+  {
     key: 'contact.trustedBy.title',
     value: 'Trusted By Industry Leaders',
     type: 'text',

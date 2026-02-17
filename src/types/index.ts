@@ -157,12 +157,45 @@ export interface Content {
   updatedBy?: string;
 }
 
+/** Footer link item (services / resources columns) */
+export interface FooterLink {
+  _id?: ObjectId;
+  section: 'services' | 'resources';
+  label: string;
+  href?: string;
+  order?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/** Office location card on the contact page */
+export interface Location {
+  _id?: ObjectId;
+  title: string;
+  highlight?: boolean;
+  items: { label: string; value: string }[];
+  order?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 /** Trusted partner logo shown on the contact page "Trusted By" section */
 export interface TrustedPartner {
   _id?: ObjectId;
   name: string;
   logo: string;
   order?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+/** FAQ item shown on home and contact pages */
+export interface Faq {
+  _id?: ObjectId;
+  question: string;
+  answer: string;
+  order?: number;
+  isPublished?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
