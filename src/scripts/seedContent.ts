@@ -253,6 +253,26 @@ const DEFAULT_CONTENT: SeedEntry[] = [
   { key: 'home.about.ctaLink', value: '/about', type: 'text' },
   { key: 'home.about.image', value: '/assets/home/rimage.png', type: 'image' },
   { key: 'home.about.backgroundImage', value: '/assets/home/bgimage.png', type: 'image' },
+  // About page images
+  { key: 'about.content.storyImage1', value: '/assets/about/Image (1).png', type: 'image' },
+  { key: 'about.content.storyImage2', value: '/assets/about/Image (2).png', type: 'image' },
+  { key: 'about.content.craftImage1', value: '/assets/about/Image (3).png', type: 'image' },
+  { key: 'about.content.craftImage2', value: '/assets/about/Image (4).png', type: 'image' },
+  { key: 'about.founder.image', value: '/assets/about/Image (5).png', type: 'image' },
+  { key: 'about.foundation.image', value: '/assets/about/bgfoundation.png', type: 'image' },
+  { key: 'about.innovation.image', value: '/innovation-video.jpg', type: 'image' },
+  // Home – Our Products section showcase images
+  { key: 'home.ourProduct.product1Image', value: '/assets/home/homeone.png', type: 'image' },
+  { key: 'home.ourProduct.product1Title', value: 'Slat', type: 'text' },
+  { key: 'home.ourProduct.product2Image', value: '/assets/home/hometwo.png', type: 'image' },
+  { key: 'home.ourProduct.product2Title', value: 'Wave Panel', type: 'text' },
+  { key: 'home.ourProduct.product3Image', value: '/assets/home/homethree.png', type: 'image' },
+  { key: 'home.ourProduct.product3Title', value: 'Groove Panel', type: 'text' },
+  // Home – Creative Approach section images
+  { key: 'home.creative.mainImage', value: '/assets/home/banImage.png', type: 'image' },
+  { key: 'home.creative.secondaryImage', value: '/assets/home/banTwo.png', type: 'image' },
+  // Home – Connect With Experts section image
+  { key: 'home.connectExperts.image', value: '/assets/about/glassimg.jpg', type: 'image' },
   // Social media links
   { key: 'social.facebook', value: 'https://facebook.com/', type: 'text' },
   { key: 'social.instagram', value: 'https://instagram.com/', type: 'text' },
