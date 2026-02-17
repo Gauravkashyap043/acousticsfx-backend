@@ -27,6 +27,16 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     type: 'text',
   },
   {
+    key: 'home.hero.button1Label',
+    value: 'Get Quote →',
+    type: 'text',
+  },
+  {
+    key: 'home.hero.button2Label',
+    value: 'Connect With Us →',
+    type: 'text',
+  },
+  {
     key: 'home.hero.backgroundImage',
     value: '/assets/home/background.png',
     type: 'image',
