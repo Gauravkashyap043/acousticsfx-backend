@@ -241,6 +241,12 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     ]),
     type: 'text',
   },
+  // Social media links
+  { key: 'social.facebook', value: 'https://facebook.com/', type: 'text' },
+  { key: 'social.instagram', value: 'https://instagram.com/', type: 'text' },
+  { key: 'social.twitter', value: 'https://x.com/', type: 'text' },
+  { key: 'social.linkedin', value: 'https://linkedin.com/', type: 'text' },
+  { key: 'social.youtube', value: '', type: 'text' },
 ];
 
 async function seed(): Promise<void> {

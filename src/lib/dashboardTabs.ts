@@ -18,6 +18,7 @@ export const DASHBOARD_TAB_KEYS = [
   'footer-links',
   'locations',
   'faqs',
+  'social-links',
 ] as const;
 
 export type DashboardTabKey = (typeof DASHBOARD_TAB_KEYS)[number];
