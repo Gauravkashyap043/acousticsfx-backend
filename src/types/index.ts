@@ -157,6 +157,16 @@ export interface Content {
   updatedBy?: string;
 }
 
+/** Client logo shown on the "Our Valuable Clients" section */
+export interface ClientLogo {
+  _id?: ObjectId;
+  name: string;
+  logo: string;
+  order?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 declare global {
   namespace Express {
     interface Request {

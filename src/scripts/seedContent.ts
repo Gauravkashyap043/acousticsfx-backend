@@ -159,6 +159,16 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     type: 'image',
   },
   {
+    key: 'home.clients.title',
+    value: 'Our Valuable Clients',
+    type: 'text',
+  },
+  {
+    key: 'home.clients.backgroundImage',
+    value: '/assets/home/mask.jpg',
+    type: 'image',
+  },
+  {
     key: 'home.hero.featureBoxes',
     value: JSON.stringify([
       {

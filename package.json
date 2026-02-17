@@ -11,6 +11,7 @@
     "seed:categories": "tsx src/scripts/seedCategories.ts",
     "seed:content": "tsx src/scripts/seedContent.ts",
     "seed:products": "tsx src/scripts/seedProducts.ts",
+    "seed:testimonials": "tsx src/scripts/seedTestimonials.ts",
     "migrate:blogs": "tsx src/scripts/migrateFrontendBlogs.ts"
   },
   "dependencies": {

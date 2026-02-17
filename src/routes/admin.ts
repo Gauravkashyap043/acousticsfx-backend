@@ -8,6 +8,7 @@ import * as productController from '../controllers/productController.js';
 import * as resourceController from '../controllers/resourceController.js';
 import * as testimonialController from '../controllers/testimonialController.js';
 import * as uploadController from '../controllers/uploadController.js';
+import * as clientLogoController from '../controllers/clientLogoController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { uploadImageMiddleware } from '../middleware/upload.js';
 import { PERMISSIONS } from '../lib/permissions.js';
@@ -187,6 +188,28 @@ router.delete(
   '/products/:id',
   requirePermission(PERMISSIONS.PRODUCTS_WRITE),
   productController.deleteProduct
+);
+
+/** Client logos CRUD */
+router.get(
+  '/clients',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  clientLogoController.listClientsAdmin
+);
+router.post(
+  '/clients',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  clientLogoController.createClient
+);
+router.put(
+  '/clients/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  clientLogoController.updateClient
+);
+router.delete(
+  '/clients/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  clientLogoController.deleteClient
 );
 
 /** List contact form submissions. Requires content:read */
