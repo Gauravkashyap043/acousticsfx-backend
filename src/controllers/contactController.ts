@@ -39,11 +39,17 @@ export async function submit(req: Request, res: Response): Promise<void> {
   }
 }
 
-/** GET /api/admin/contact-submissions – list all (admin only) */
+/** GET /api/admin/contact-submissions – paginated list (admin only) */
 export async function list(req: Request, res: Response): Promise<void> {
   try {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    const skip = Math.max(Number(req.query.skip) || 0, 0);
+
     const coll = getContactSubmissionCollection();
-    const items = await coll.find({}).sort({ createdAt: -1 }).toArray();
+    const [items, total] = await Promise.all([
+      coll.find({}).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      coll.countDocuments(),
+    ]);
 
     res.json({
       items: items.map((d) => ({
@@ -55,6 +61,9 @@ export async function list(req: Request, res: Response): Promise<void> {
         message: d.message,
         createdAt: d.createdAt instanceof Date ? d.createdAt.toISOString() : d.createdAt,
       })),
+      total,
+      limit,
+      skip,
     });
   } catch (err) {
     console.error('Contact list error:', err);

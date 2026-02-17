@@ -17,16 +17,36 @@ function toAdminDto(doc: { _id: ObjectId; email: string; role?: AdminRole; visib
   };
 }
 
-/** GET /api/admin/admins – list all admins (id, email, role, visibleTabs) + tabKeys. Requires SYSTEM_MANAGE. */
-export async function list(_req: Request, res: Response): Promise<void> {
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
+
+/** GET /api/admin/admins – list admins (id, email, role, visibleTabs) + tabKeys. Paginated. Requires SYSTEM_MANAGE. */
+export async function list(req: Request, res: Response): Promise<void> {
+  const page = Math.max(1, parseInt(String(req.query.page), 10) || DEFAULT_PAGE);
+  const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(String(req.query.limit), 10) || DEFAULT_LIMIT));
+  const skip = (page - 1) * limit;
+
   const admins = getAdminCollection();
-  const cursor = admins.find(
-    {},
-    { projection: { email: 1, role: 1, visibleTabs: 1 } }
-  );
-  const docs = await cursor.toArray();
+  const [docs, total] = await Promise.all([
+    admins
+      .find({}, { projection: { email: 1, role: 1, visibleTabs: 1 } })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray(),
+    admins.countDocuments(),
+  ]);
   const listAdmins = docs.map((d) => toAdminDto({ _id: d._id!, email: d.email, role: d.role, visibleTabs: d.visibleTabs }));
-  res.json({ admins: listAdmins, tabKeys: [...DASHBOARD_TAB_KEYS] });
+  const totalPages = Math.ceil(total / limit);
+  res.json({
+    admins: listAdmins,
+    tabKeys: [...DASHBOARD_TAB_KEYS],
+    total,
+    page,
+    limit,
+    totalPages,
+  });
 }
 
 /** POST /api/admin/admins – create admin. Requires SYSTEM_MANAGE. */
