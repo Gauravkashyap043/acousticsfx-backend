@@ -14,6 +14,7 @@ export const DASHBOARD_TAB_KEYS = [
   'case-studies',
   'events',
   'clients',
+  'trusted-partners',
 ] as const;
 
 export type DashboardTabKey = (typeof DASHBOARD_TAB_KEYS)[number];

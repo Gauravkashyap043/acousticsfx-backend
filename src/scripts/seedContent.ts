@@ -169,6 +169,17 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     type: 'image',
   },
   {
+    key: 'contact.trustedBy.title',
+    value: 'Trusted By Industry Leaders',
+    type: 'text',
+  },
+  {
+    key: 'contact.trustedBy.description',
+    value:
+      'Join our roster of satisfied clients and experience the exceptional results and service that have earned us the trust of industry leaders worldwide.',
+    type: 'text',
+  },
+  {
     key: 'home.hero.featureBoxes',
     value: JSON.stringify([
       {

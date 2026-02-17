@@ -12,6 +12,7 @@ import contactRoutes from './routes/contact.js';
 import newsletterRoutes from './routes/newsletter.js';
 import testimonialRoutes from './routes/testimonials.js';
 import clientRoutes from './routes/clients.js';
+import trustedPartnerRoutes from './routes/trustedPartners.js';
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/clients', clientRoutes);
+app.use('/api/trusted-partners', trustedPartnerRoutes);
 
 async function start(): Promise<void> {
   await connectDb();

@@ -9,6 +9,7 @@ import * as resourceController from '../controllers/resourceController.js';
 import * as testimonialController from '../controllers/testimonialController.js';
 import * as uploadController from '../controllers/uploadController.js';
 import * as clientLogoController from '../controllers/clientLogoController.js';
+import * as trustedPartnerController from '../controllers/trustedPartnerController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { uploadImageMiddleware } from '../middleware/upload.js';
 import { PERMISSIONS } from '../lib/permissions.js';
@@ -210,6 +211,28 @@ router.delete(
   '/clients/:id',
   requirePermission(PERMISSIONS.CONTENT_WRITE),
   clientLogoController.deleteClient
+);
+
+/** Trusted partners CRUD */
+router.get(
+  '/trusted-partners',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  trustedPartnerController.listAdmin
+);
+router.post(
+  '/trusted-partners',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  trustedPartnerController.create
+);
+router.put(
+  '/trusted-partners/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  trustedPartnerController.update
+);
+router.delete(
+  '/trusted-partners/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  trustedPartnerController.remove
 );
 
 /** List contact form submissions. Requires content:read */
