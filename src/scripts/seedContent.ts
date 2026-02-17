@@ -241,6 +241,18 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     ]),
     type: 'text',
   },
+  // Home about section
+  { key: 'home.about.label', value: 'About Us', type: 'text' },
+  { key: 'home.about.heading', value: 'Creative solutions by professional designers', type: 'text' },
+  {
+    key: 'home.about.body',
+    value: 'At Acoustics FX, we transform ordinary spaces into extraordinary experiences. With over 15 years of expertise in acoustic solutions, premium wooden flooring, and advanced soundproofing, we blend science with design to deliver environments that inspire focus, comfort, and performance.',
+    type: 'text',
+  },
+  { key: 'home.about.ctaLabel', value: 'Learn More', type: 'text' },
+  { key: 'home.about.ctaLink', value: '/about', type: 'text' },
+  { key: 'home.about.image', value: '/assets/home/rimage.png', type: 'image' },
+  { key: 'home.about.backgroundImage', value: '/assets/home/bgimage.png', type: 'image' },
   // Social media links
   { key: 'social.facebook', value: 'https://facebook.com/', type: 'text' },
   { key: 'social.instagram', value: 'https://instagram.com/', type: 'text' },
