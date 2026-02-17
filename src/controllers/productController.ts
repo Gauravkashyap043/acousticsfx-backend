@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { getProductCollection } from '../models/Product.js';
-import type { Product, SubProduct } from '../types/index.js';
+import { getCategoryCollection } from '../models/Category.js';
+import type { Product, SubProduct, ProductCategory } from '../types/index.js';
 
 const SLUG_REGEX = /^[a-zA-Z0-9-]+$/;
 
@@ -41,14 +42,17 @@ function validateProductBody(
     }
   }
   const order = typeof body.order === 'number' ? body.order : 0;
-  return { slug, title, description, image, heroImage, subProducts, order };
+  const categorySlug = validateSlug(body.categorySlug) ?? undefined;
+  return { slug, title, description, image, heroImage, subProducts, order, categorySlug };
 }
 
-/** Public: GET /api/products – all products with subProducts, ordered by order then slug. No _id in response. */
+/** Public: GET /api/products – all products (optional ?category=acoustic). No _id in response. */
 export async function listProducts(req: Request, res: Response): Promise<void> {
   try {
+    const categorySlug = validateSlug(req.query['category'] as string) ?? undefined;
     const coll = getProductCollection();
-    const products = await coll.find({}).sort({ order: 1, slug: 1 }).toArray();
+    const filter = categorySlug ? { categorySlug } : {};
+    const products = await coll.find(filter).sort({ order: 1, slug: 1 }).toArray();
     const normalized = products.map((p) => ({
       slug: p.slug,
       title: p.title,
@@ -56,11 +60,143 @@ export async function listProducts(req: Request, res: Response): Promise<void> {
       image: p.image,
       heroImage: p.heroImage,
       subProducts: p.subProducts ?? [],
+      categorySlug: p.categorySlug,
     }));
     res.json({ products: normalized });
   } catch (err) {
     console.error('listProducts error:', err);
     res.status(500).json({ error: 'Failed to fetch products' });
+  }
+}
+
+/** Public: GET /api/products/categories – list all categories for nav / products overview. */
+export async function listCategories(req: Request, res: Response): Promise<void> {
+  try {
+    const coll = getCategoryCollection();
+    const categories = await coll.find({}).sort({ order: 1, slug: 1 }).toArray();
+    const normalized = categories.map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      description: c.description,
+      image: c.image,
+      order: c.order ?? 0,
+    }));
+    res.json({ categories: normalized });
+  } catch (err) {
+    console.error('listCategories error:', err);
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+}
+
+/** Public: GET /api/products/categories/:categorySlug – category details + products in that category. */
+export async function getCategoryBySlug(req: Request, res: Response): Promise<void> {
+  try {
+    const slug = validateSlug(req.params['categorySlug']);
+    if (!slug) {
+      res.status(400).json({ error: 'Invalid category slug' });
+      return;
+    }
+    const catColl = getCategoryCollection();
+    const productColl = getProductCollection();
+    const category = await catColl.findOne({ slug });
+    if (!category) {
+      res.status(404).json({ error: 'Category not found' });
+      return;
+    }
+    const products = await productColl
+      .find({ categorySlug: slug })
+      .sort({ order: 1, slug: 1 })
+      .toArray();
+    const normalizedProducts = products.map((p) => ({
+      slug: p.slug,
+      title: p.title,
+      description: p.description,
+      image: p.image,
+      heroImage: p.heroImage,
+      subProducts: p.subProducts ?? [],
+    }));
+    res.json({
+      category: {
+        slug: category.slug,
+        name: category.name,
+        description: category.description,
+        image: category.image,
+        order: category.order ?? 0,
+      },
+      products: normalizedProducts,
+    });
+  } catch (err) {
+    console.error('getCategoryBySlug error:', err);
+    res.status(500).json({ error: 'Failed to fetch category' });
+  }
+}
+
+/** Public: GET /api/products/slug/:productSlug – single product details by slug (for /products/:category/:productSlug). */
+export async function getProductBySlug(req: Request, res: Response): Promise<void> {
+  try {
+    const slug = validateSlug(req.params['productSlug']);
+    if (!slug) {
+      res.status(400).json({ error: 'Invalid product slug' });
+      return;
+    }
+    const coll = getProductCollection();
+    const product = await coll.findOne({ slug });
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    res.json({
+      slug: product.slug,
+      title: product.title,
+      description: product.description,
+      image: product.image,
+      heroImage: product.heroImage,
+      subProducts: product.subProducts ?? [],
+      categorySlug: product.categorySlug,
+    });
+  } catch (err) {
+    console.error('getProductBySlug error:', err);
+    res.status(500).json({ error: 'Failed to fetch product' });
+  }
+}
+
+/** Public: GET /api/products/slug/:productSlug/sub-products/:subProductSlug – sub-product details. */
+export async function getSubProductBySlug(req: Request, res: Response): Promise<void> {
+  try {
+    const productSlug = validateSlug(req.params['productSlug']);
+    const subProductSlug = validateSlug(req.params['subProductSlug']);
+    if (!productSlug || !subProductSlug) {
+      res.status(400).json({ error: 'Invalid product or sub-product slug' });
+      return;
+    }
+    const coll = getProductCollection();
+    const product = await coll.findOne({ slug: productSlug });
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    const subProducts = product.subProducts ?? [];
+    const sub = subProducts.find((s) => s.slug === subProductSlug);
+    if (!sub) {
+      res.status(404).json({ error: 'Sub-product not found' });
+      return;
+    }
+    res.json({
+      product: {
+        slug: product.slug,
+        title: product.title,
+        categorySlug: product.categorySlug,
+      },
+      subProduct: {
+        slug: sub.slug,
+        title: sub.title,
+        description: sub.description,
+        image: sub.image,
+      },
+    });
+  } catch (err) {
+    console.error('getSubProductBySlug error:', err);
+    res.status(500).json({ error: 'Failed to fetch sub-product' });
   }
 }
 
@@ -78,6 +214,7 @@ export async function listProductsAdmin(req: Request, res: Response): Promise<vo
         image: p.image,
         heroImage: p.heroImage,
         subProducts: p.subProducts ?? [],
+        categorySlug: p.categorySlug,
         order: p.order ?? 0,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
@@ -119,6 +256,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       image: inserted?.image,
       heroImage: inserted?.heroImage,
       subProducts: inserted?.subProducts ?? [],
+      categorySlug: inserted?.categorySlug,
       order: inserted?.order ?? 0,
       createdAt: inserted?.createdAt,
       updatedAt: inserted?.updatedAt,
@@ -166,6 +304,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
           image: parsed.image,
           heroImage: parsed.heroImage,
           subProducts: parsed.subProducts,
+          categorySlug: parsed.categorySlug,
           order: parsed.order,
           updatedAt: now,
         },
@@ -180,6 +319,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       image: updated?.image,
       heroImage: updated?.heroImage,
       subProducts: updated?.subProducts ?? [],
+      categorySlug: updated?.categorySlug,
       order: updated?.order ?? 0,
       createdAt: updated?.createdAt,
       updatedAt: updated?.updatedAt,

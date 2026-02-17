@@ -5,7 +5,12 @@ import { env } from '../config/env.js';
 
 function getImageKitClient(): ImageKit | null {
   if (!env.IMAGEKIT_PRIVATE_KEY) return null;
-  return new ImageKit({ privateKey: env.IMAGEKIT_PRIVATE_KEY });
+  const options: { privateKey: string; publicKey?: string; urlEndpoint?: string } = {
+    privateKey: env.IMAGEKIT_PRIVATE_KEY,
+  };
+  if (env.IMAGEKIT_PUBLIC_KEY) options.publicKey = env.IMAGEKIT_PUBLIC_KEY;
+  if (env.IMAGEKIT_URL_ENDPOINT) options.urlEndpoint = env.IMAGEKIT_URL_ENDPOINT;
+  return new ImageKit(options);
 }
 
 /**
@@ -33,7 +38,7 @@ export async function uploadImage(req: Request, res: Response): Promise<void> {
     const result = await client.files.upload({
       file: uploadable,
       fileName,
-      folder: '/blogs',
+      folder: '/admin',
     });
 
     const url = (result as { url?: string }).url;

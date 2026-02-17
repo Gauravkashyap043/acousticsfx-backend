@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "seed": "tsx src/scripts/seedAdmin.ts",
+    "seed:categories": "tsx src/scripts/seedCategories.ts",
     "seed:content": "tsx src/scripts/seedContent.ts",
     "seed:products": "tsx src/scripts/seedProducts.ts",
     "migrate:blogs": "tsx src/scripts/migrateFrontendBlogs.ts"

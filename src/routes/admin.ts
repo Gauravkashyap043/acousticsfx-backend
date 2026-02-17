@@ -3,8 +3,10 @@ import * as adminController from '../controllers/adminController.js';
 import * as adminsController from '../controllers/adminsController.js';
 import * as contactController from '../controllers/contactController.js';
 import * as newsletterController from '../controllers/newsletterController.js';
+import * as categoryController from '../controllers/categoryController.js';
 import * as productController from '../controllers/productController.js';
 import * as resourceController from '../controllers/resourceController.js';
+import * as testimonialController from '../controllers/testimonialController.js';
 import * as uploadController from '../controllers/uploadController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { uploadImageMiddleware } from '../middleware/upload.js';
@@ -96,6 +98,28 @@ router.delete(
   resourceController.deleteCaseStudy
 );
 
+/** Testimonials */
+router.get(
+  '/testimonials',
+  requirePermission(PERMISSIONS.CONTENT_READ),
+  testimonialController.listTestimonialsAdmin
+);
+router.post(
+  '/testimonials',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  testimonialController.createTestimonial
+);
+router.put(
+  '/testimonials/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  testimonialController.updateTestimonial
+);
+router.delete(
+  '/testimonials/:id',
+  requirePermission(PERMISSIONS.CONTENT_WRITE),
+  testimonialController.deleteTestimonial
+);
+
 /** Events */
 router.get(
   '/events',
@@ -116,6 +140,28 @@ router.delete(
   '/events/:id',
   requirePermission(PERMISSIONS.RESOURCES_WRITE),
   resourceController.deleteEvent
+);
+
+/** Categories CRUD */
+router.get(
+  '/categories',
+  requirePermission(PERMISSIONS.CATEGORIES_READ),
+  categoryController.listCategoriesAdmin
+);
+router.post(
+  '/categories',
+  requirePermission(PERMISSIONS.CATEGORIES_WRITE),
+  categoryController.createCategory
+);
+router.put(
+  '/categories/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_WRITE),
+  categoryController.updateCategory
+);
+router.delete(
+  '/categories/:id',
+  requirePermission(PERMISSIONS.CATEGORIES_WRITE),
+  categoryController.deleteCategory
 );
 
 /** List all products. Requires products:read */

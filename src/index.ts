@@ -10,6 +10,7 @@ import blogRoutes from './routes/blogs.js';
 import adminRoutes from './routes/admin.js';
 import contactRoutes from './routes/contact.js';
 import newsletterRoutes from './routes/newsletter.js';
+import testimonialRoutes from './routes/testimonials.js';
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/testimonials', testimonialRoutes);
 
 async function start(): Promise<void> {
   await connectDb();

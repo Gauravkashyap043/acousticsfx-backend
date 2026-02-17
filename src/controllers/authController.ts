@@ -13,6 +13,68 @@ import { getAllowedTabs } from '../lib/dashboardTabs.js';
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
 
 const DEFAULT_ROLE = 'super_admin' as const;
+/** Role assigned to new admins who sign up (no super_admin from signup). */
+const SIGNUP_DEFAULT_ROLE = 'editor' as const;
+
+/**
+ * Sign up: create new admin with email/password. Returns JWT and admin (same shape as login).
+ * New admins get editor role by default.
+ */
+export async function signUp(req: Request, res: Response): Promise<void> {
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
+
+    if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+      res.status(400).json({ error: 'Email and password are required' });
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      res.status(400).json({ error: 'Email is required' });
+      return;
+    }
+    if (password.length < 8) {
+      res.status(400).json({ error: 'Password must be at least 8 characters' });
+      return;
+    }
+
+    const admins = getAdminCollection();
+    const existing = await admins.findOne({ email: normalizedEmail });
+    if (existing) {
+      res.status(409).json({ error: 'An account with this email already exists' });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const { insertedId } = await admins.insertOne({
+      email: normalizedEmail,
+      passwordHash,
+      role: SIGNUP_DEFAULT_ROLE,
+      createdAt: new Date(),
+    });
+
+    const role = SIGNUP_DEFAULT_ROLE;
+    const payload: JwtPayload = {
+      sub: insertedId.toString(),
+      email: normalizedEmail,
+      role,
+    };
+    const token = jwt.sign(
+      payload,
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_EXPIRES_IN } as jwt.SignOptions
+    );
+    const allowedTabs = getAllowedTabs({ role, visibleTabs: undefined });
+    res.status(201).json({
+      token,
+      admin: { id: insertedId.toString(), email: normalizedEmail, role, allowedTabs },
+    });
+  } catch (err) {
+    console.error('Sign up error:', err);
+    res.status(500).json({ error: 'Sign up failed' });
+  }
+}
 
 /**
  * Login: validates email/password, returns JWT and admin (id, email, role).

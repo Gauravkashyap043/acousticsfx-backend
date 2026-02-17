@@ -35,13 +35,20 @@ export async function listResources(req: Request, res: Response): Promise<void> 
   }
 }
 
-/** GET /api/blogs – backward compat for frontend */
+/** GET /api/blogs – public list; optional ?recent=true&limit=N&excludeSlug=xxx */
 export async function listBlogs(req: Request, res: Response): Promise<void> {
   try {
-    const blogs = await getBlogCollection()
-      .find({})
-      .sort({ publishedAt: -1, createdAt: -1 })
-      .toArray();
+    const limit = typeof req.query.limit === 'string' ? Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20)) : undefined;
+    const excludeSlug = typeof req.query.excludeSlug === 'string' && req.query.excludeSlug.trim() ? req.query.excludeSlug.trim() : undefined;
+    const filter: Record<string, unknown> = {};
+    // Only published blogs on public API
+    filter.$or = [{ isPublished: true }, { isPublished: { $exists: false } }];
+    if (excludeSlug) filter.slug = { $ne: excludeSlug };
+    let cursor = getBlogCollection()
+      .find(filter)
+      .sort({ publishedAt: -1, createdAt: -1 });
+    if (limit) cursor = cursor.limit(limit);
+    const blogs = await cursor.toArray();
     const stripId = (arr: Blog[]) =>
       arr.map(({ _id, ...rest }) => ({ ...rest, _id: _id?.toString() }));
     res.json({ success: true, blogs: stripId(blogs) });
@@ -51,7 +58,7 @@ export async function listBlogs(req: Request, res: Response): Promise<void> {
   }
 }
 
-/** GET /api/blogs/slug/:slug */
+/** GET /api/blogs/slug/:slug – public; only returns published blogs */
 export async function getBlogBySlug(req: Request, res: Response): Promise<void> {
   try {
     const slug = validateSlug(req.params['slug']);
@@ -59,11 +66,16 @@ export async function getBlogBySlug(req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: 'Invalid slug' });
       return;
     }
-    const blog = await getBlogCollection().findOne({ slug });
+    const blog = await getBlogCollection().findOne({
+      slug,
+      $or: [{ isPublished: true }, { isPublished: { $exists: false } }],
+    });
     if (!blog) {
       res.status(404).json({ error: 'Blog not found' });
       return;
     }
+    await getBlogCollection().updateOne({ _id: blog._id }, { $inc: { views: 1 } });
+    (blog as Blog).views = (blog.views ?? 0) + 1;
     const { _id, ...rest } = blog;
     res.json({ success: true, blog: { ...rest, _id: _id?.toString() } });
   } catch (err) {
@@ -81,12 +93,24 @@ function validateBlogBody(body: Record<string, unknown>): Omit<Blog, '_id' | 'cr
   if (!title) return { error: 'title is required' };
   const heroImage = typeof body.heroImage === 'string' ? body.heroImage.trim() : '';
   const authorName = typeof body.authorName === 'string' ? body.authorName.trim() : '';
+  const authorId = typeof body.authorId === 'string' ? body.authorId.trim() || undefined : undefined;
+  const authorEmail = typeof body.authorEmail === 'string' ? body.authorEmail.trim() || undefined : undefined;
   const excerpt = typeof body.excerpt === 'string' ? body.excerpt.trim() : undefined;
   const content = typeof body.content === 'string' ? body.content : undefined;
   const authorImage = typeof body.authorImage === 'string' ? body.authorImage.trim() : undefined;
+  const metaDescription = typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined;
   const tags = Array.isArray(body.tags) ? (body.tags as string[]).filter((t) => typeof t === 'string') : undefined;
-  const publishedAt = body.publishedAt ? new Date(body.publishedAt as string) : undefined;
-  return { slug, title, excerpt, content, heroImage, authorName, authorImage, tags, publishedAt };
+  const isPublished = typeof body.isPublished === 'boolean' ? body.isPublished : body.isPublished === undefined ? true : !!body.isPublished;
+  const views = typeof body.views === 'number' && body.views >= 0 ? body.views : undefined;
+  const publishedAt = body.publishedAt ? (() => {
+    const d = new Date(body.publishedAt as string);
+    return isNaN(d.getTime()) ? undefined : d;
+  })() : undefined;
+  return {
+    slug, title, excerpt, content, heroImage,
+    authorId, authorName, authorEmail, authorImage, metaDescription,
+    tags, isPublished, views, publishedAt,
+  };
 }
 
 export async function listBlogsAdmin(req: Request, res: Response): Promise<void> {
@@ -115,7 +139,9 @@ export async function createBlog(req: Request, res: Response): Promise<void> {
       return;
     }
     const now = new Date();
-    const doc: Blog = { ...parsed, createdAt: now, updatedAt: now };
+    const publishedAt = parsed.publishedAt ?? (parsed.isPublished !== false ? now : undefined);
+    const views = parsed.views ?? 0;
+    const doc: Blog = { ...parsed, publishedAt, views, createdAt: now, updatedAt: now };
     const result = await coll.insertOne(doc);
     const inserted = await coll.findOne({ _id: result.insertedId });
     res.status(201).json(inserted ? { ...inserted, _id: inserted._id?.toString() } : {});
@@ -151,9 +177,13 @@ export async function updateBlog(req: Request, res: Response): Promise<void> {
       }
     }
     const now = new Date();
+    const setPayload: Record<string, unknown> = { updatedAt: now };
+    for (const [k, v] of Object.entries(parsed)) {
+      if (v !== undefined) setPayload[k] = v;
+    }
     await coll.updateOne(
       { _id: new ObjectId(id) },
-      { $set: { ...parsed, updatedAt: now } }
+      { $set: setPayload }
     );
     const updated = await coll.findOne({ _id: new ObjectId(id) });
     res.json(updated ? { ...updated, _id: updated._id?.toString() } : {});

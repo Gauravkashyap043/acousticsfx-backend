@@ -10,6 +10,7 @@ const DEFAULT_PRODUCTS: Omit<Product, '_id'>[] = [
   {
     slug: 'wood-acoustic-panel',
     title: 'Wood Acoustic Panel',
+    categorySlug: 'acoustic',
     description:
       'Acoustic wall panels made of wood stops reverberation and spreading sound waves better than panels made of steel and glass or concrete. The acoustic wood panel is used for sound insulation and acoustic arrangements. Acoustic wood panels eliminate echo problems. In order to maximize sound quality, the panel provides a premium acoustic arrangement.',
     image: '/assets/product/product-card-1.png',
@@ -55,6 +56,7 @@ const DEFAULT_PRODUCTS: Omit<Product, '_id'>[] = [
   },
   {
     slug: 'fabric-acoustic-panel',
+    categorySlug: 'acoustic',
     title: 'Fabric Acoustic Panel',
     description:
       'Fabric acoustic panels provide excellent sound absorption and aesthetic appeal. These versatile panels offer superior acoustic performance with customizable design options, making them ideal for modern spaces requiring both sound control and visual elegance.',
@@ -65,6 +67,7 @@ const DEFAULT_PRODUCTS: Omit<Product, '_id'>[] = [
   },
   {
     slug: 'baffle-clouds',
+    categorySlug: 'acoustic',
     title: 'Baffle & Clouds',
     description:
       'Baffle and cloud acoustic solutions provide effective sound absorption for large spaces. These suspended panels create stunning visual impact while delivering superior acoustic performance in auditoriums, offices, and commercial environments.',
@@ -75,6 +78,7 @@ const DEFAULT_PRODUCTS: Omit<Product, '_id'>[] = [
   },
   {
     slug: 'wood-wool-acoustic-panel',
+    categorySlug: 'acoustic',
     title: 'Wood Wool Acoustic Panel',
     description:
       'Wood wool acoustic panels combine natural wood fibers with excellent sound absorption properties. These eco-friendly panels provide sustainable acoustic solutions with natural aesthetics for modern architectural spaces.',

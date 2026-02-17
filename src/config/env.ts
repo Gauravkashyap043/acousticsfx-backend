@@ -22,8 +22,11 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS,
   /** From address for reset emails */
   SMTP_FROM: process.env.SMTP_FROM ?? 'AcousticsFX Admin <noreply@acousticsfx.com>',
-  /** ImageKit (optional). If set, admin image uploads go to ImageKit. */
-  IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY,
-  IMAGEKIT_PUBLIC_KEY: process.env.IMAGEKIT_PUBLIC_KEY,
-  IMAGEKIT_URL_ENDPOINT: process.env.IMAGEKIT_URL_ENDPOINT,
+  /** ImageKit (optional). If set, admin image uploads go to ImageKit. Supports IMAGEKIT_* or imagekit_* env vars. */
+  IMAGEKIT_PRIVATE_KEY:
+    process.env.IMAGEKIT_PRIVATE_KEY ?? process.env.imagekit_private_key,
+  IMAGEKIT_PUBLIC_KEY:
+    process.env.IMAGEKIT_PUBLIC_KEY ?? process.env.imagekit_public_key,
+  IMAGEKIT_URL_ENDPOINT:
+    process.env.IMAGEKIT_URL_ENDPOINT ?? process.env.imagekit_url_endpoint,
 } as const;
