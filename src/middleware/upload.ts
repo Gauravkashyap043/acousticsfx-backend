@@ -1,6 +1,6 @@
 import multer from 'multer';
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 const storage = multer.memoryStorage();
@@ -12,7 +12,7 @@ export const uploadImageMiddleware = multer({
     if (ALLOWED_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Use JPEG, PNG, GIF, or WebP.'));
+      cb(new Error('Invalid file type. Use JPEG, PNG, GIF, WebP, or AVIF.'));
     }
   },
 }).single('file');
