@@ -103,12 +103,47 @@ export interface ProductCategory {
   updatedAt?: Date;
 }
 
+/** Grid intro block (title, subtitle, body) for sub-product page */
+export interface SubProductGridIntro {
+  title?: string;
+  subtitle?: string;
+  body?: string;
+}
+
+/** Single image in grid section */
+export interface SubProductGridImage {
+  url: string;
+  alt?: string;
+}
+
+/** Single spec row (label / value) */
+export interface SubProductSpec {
+  label: string;
+  value: string;
+}
+
+/** Gallery slide (large + small image) */
+export interface SubProductGallerySlide {
+  large: string;
+  small: string;
+}
+
 /** Sub-product under a product */
 export interface SubProduct {
   slug: string;
   title: string;
   description: string;
   image: string;
+  /** Optional intro block for grid section (title, subtitle, body) */
+  gridIntro?: SubProductGridIntro;
+  /** Images for grid section (e.g. 3: right small, left small, right big) */
+  gridImages?: SubProductGridImage[];
+  /** Long description in spec section */
+  specDescription?: string;
+  /** Spec rows (label / value) */
+  specs?: SubProductSpec[];
+  /** Gallery slides (each has large + small image) */
+  gallerySlides?: SubProductGallerySlide[];
 }
 
 /** Product (acoustic panels, etc.) – belongs to a category via categorySlug */
@@ -123,6 +158,10 @@ export interface Product {
   /** Category slug (e.g. "acoustic") for filtering and URL structure */
   categorySlug?: string;
   order?: number;
+  /** Optional heading for the "Our Acoustic Panels" section on the product page */
+  panelsSectionTitle?: string;
+  /** Optional body copy for the panels section */
+  panelsSectionDescription?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

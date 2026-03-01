@@ -6,6 +6,7 @@ export const DASHBOARD_TAB_KEYS = [
   'users',
   'categories',
   'products',
+  'sub-products',
   'testimonials',
   'contact',
   'newsletter',

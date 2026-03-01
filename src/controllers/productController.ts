@@ -2,13 +2,58 @@ import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { getProductCollection } from '../models/Product.js';
 import { getCategoryCollection } from '../models/Category.js';
-import type { Product, SubProduct, ProductCategory } from '../types/index.js';
+import type {
+  Product,
+  SubProduct,
+  ProductCategory,
+  SubProductGridIntro,
+  SubProductGridImage,
+  SubProductSpec,
+  SubProductGallerySlide,
+} from '../types/index.js';
 
 const SLUG_REGEX = /^[a-zA-Z0-9-]+$/;
 
 function validateSlug(s: unknown): string | null {
   if (typeof s !== 'string' || !s.trim()) return null;
   return SLUG_REGEX.test(s) ? s.trim() : null;
+}
+
+function validateGridIntro(raw: unknown): SubProductGridIntro | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const o = raw as Record<string, unknown>;
+  const title = typeof o.title === 'string' ? o.title.trim() : undefined;
+  const subtitle = typeof o.subtitle === 'string' ? o.subtitle.trim() : undefined;
+  const body = typeof o.body === 'string' ? o.body.trim() : undefined;
+  if (!title && !subtitle && !body) return undefined;
+  return { title, subtitle, body };
+}
+
+function validateGridImage(raw: unknown): SubProductGridImage | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const url = typeof o.url === 'string' && o.url.trim() ? o.url.trim() : '';
+  if (!url) return null;
+  const alt = typeof o.alt === 'string' ? o.alt.trim() : undefined;
+  return { url, alt };
+}
+
+function validateSpec(raw: unknown): SubProductSpec | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const label = typeof o.label === 'string' ? o.label.trim() : '';
+  const value = typeof o.value === 'string' ? o.value.trim() : '';
+  if (!label && !value) return null;
+  return { label: label || '—', value: value || '—' };
+}
+
+function validateGallerySlide(raw: unknown): SubProductGallerySlide | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const large = typeof o.large === 'string' && o.large.trim() ? o.large.trim() : '';
+  const small = typeof o.small === 'string' && o.small.trim() ? o.small.trim() : '';
+  if (!large || !small) return null;
+  return { large, small };
 }
 
 function validateSubProduct(raw: unknown): SubProduct | { error: string } {
@@ -20,7 +65,45 @@ function validateSubProduct(raw: unknown): SubProduct | { error: string } {
   if (!title) return { error: 'subProduct.title is required' };
   const description = typeof o.description === 'string' ? o.description.trim() : '';
   const image = typeof o.image === 'string' && o.image.trim() ? o.image.trim() : '';
-  return { slug, title, description, image };
+  const sub: SubProduct = { slug, title, description, image };
+
+  const gridIntro = validateGridIntro(o.gridIntro);
+  if (gridIntro) sub.gridIntro = gridIntro;
+
+  if (Array.isArray(o.gridImages)) {
+    const gridImages: SubProductGridImage[] = [];
+    for (const item of o.gridImages) {
+      const img = validateGridImage(item);
+      if (img) gridImages.push(img);
+    }
+    if (gridImages.length) sub.gridImages = gridImages;
+  }
+
+  const specDescription =
+    typeof o.specDescription === 'string' && o.specDescription.trim()
+      ? o.specDescription.trim()
+      : undefined;
+  if (specDescription) sub.specDescription = specDescription;
+
+  if (Array.isArray(o.specs)) {
+    const specs: SubProductSpec[] = [];
+    for (const item of o.specs) {
+      const spec = validateSpec(item);
+      if (spec) specs.push(spec);
+    }
+    if (specs.length) sub.specs = specs;
+  }
+
+  if (Array.isArray(o.gallerySlides)) {
+    const gallerySlides: SubProductGallerySlide[] = [];
+    for (const item of o.gallerySlides) {
+      const slide = validateGallerySlide(item);
+      if (slide) gallerySlides.push(slide);
+    }
+    if (gallerySlides.length) sub.gallerySlides = gallerySlides;
+  }
+
+  return sub;
 }
 
 function validateProductBody(
@@ -43,7 +126,9 @@ function validateProductBody(
   }
   const order = typeof body.order === 'number' ? body.order : 0;
   const categorySlug = validateSlug(body.categorySlug) ?? undefined;
-  return { slug, title, description, image, heroImage, subProducts, order, categorySlug };
+  const panelsSectionTitle = typeof body.panelsSectionTitle === 'string' ? body.panelsSectionTitle.trim() : undefined;
+  const panelsSectionDescription = typeof body.panelsSectionDescription === 'string' ? body.panelsSectionDescription.trim() : undefined;
+  return { slug, title, description, image, heroImage, subProducts, order, categorySlug, panelsSectionTitle, panelsSectionDescription };
 }
 
 /** Public: GET /api/products – all products (optional ?category=acoustic). No _id in response. */
@@ -61,6 +146,8 @@ export async function listProducts(req: Request, res: Response): Promise<void> {
       heroImage: p.heroImage,
       subProducts: p.subProducts ?? [],
       categorySlug: p.categorySlug,
+      panelsSectionTitle: p.panelsSectionTitle,
+      panelsSectionDescription: p.panelsSectionDescription,
     }));
     res.json({ products: normalized });
   } catch (err) {
@@ -114,6 +201,8 @@ export async function getCategoryBySlug(req: Request, res: Response): Promise<vo
       image: p.image,
       heroImage: p.heroImage,
       subProducts: p.subProducts ?? [],
+      panelsSectionTitle: p.panelsSectionTitle,
+      panelsSectionDescription: p.panelsSectionDescription,
     }));
     res.json({
       category: {
@@ -153,6 +242,8 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
       heroImage: product.heroImage,
       subProducts: product.subProducts ?? [],
       categorySlug: product.categorySlug,
+      panelsSectionTitle: product.panelsSectionTitle,
+      panelsSectionDescription: product.panelsSectionDescription,
     });
   } catch (err) {
     console.error('getProductBySlug error:', err);
@@ -192,6 +283,11 @@ export async function getSubProductBySlug(req: Request, res: Response): Promise<
         title: sub.title,
         description: sub.description,
         image: sub.image,
+        gridIntro: sub.gridIntro,
+        gridImages: sub.gridImages,
+        specDescription: sub.specDescription,
+        specs: sub.specs,
+        gallerySlides: sub.gallerySlides,
       },
     });
   } catch (err) {
@@ -216,6 +312,8 @@ export async function listProductsAdmin(req: Request, res: Response): Promise<vo
         subProducts: p.subProducts ?? [],
         categorySlug: p.categorySlug,
         order: p.order ?? 0,
+        panelsSectionTitle: p.panelsSectionTitle,
+        panelsSectionDescription: p.panelsSectionDescription,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
       })),
@@ -241,11 +339,11 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       return;
     }
     const now = new Date();
-    const doc: Product = {
+    const doc = {
       ...parsed,
       createdAt: now,
       updatedAt: now,
-    };
+    } as Product;
     const result = await coll.insertOne(doc as Product);
     const inserted = await coll.findOne({ _id: result.insertedId });
     res.status(201).json({
@@ -258,6 +356,8 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       subProducts: inserted?.subProducts ?? [],
       categorySlug: inserted?.categorySlug,
       order: inserted?.order ?? 0,
+      panelsSectionTitle: inserted?.panelsSectionTitle,
+      panelsSectionDescription: inserted?.panelsSectionDescription,
       createdAt: inserted?.createdAt,
       updatedAt: inserted?.updatedAt,
     });
@@ -306,6 +406,8 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
           subProducts: parsed.subProducts,
           categorySlug: parsed.categorySlug,
           order: parsed.order,
+          panelsSectionTitle: parsed.panelsSectionTitle,
+          panelsSectionDescription: parsed.panelsSectionDescription,
           updatedAt: now,
         },
       }
@@ -321,6 +423,8 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       subProducts: updated?.subProducts ?? [],
       categorySlug: updated?.categorySlug,
       order: updated?.order ?? 0,
+      panelsSectionTitle: updated?.panelsSectionTitle,
+      panelsSectionDescription: updated?.panelsSectionDescription,
       createdAt: updated?.createdAt,
       updatedAt: updated?.updatedAt,
     });
