@@ -20,7 +20,10 @@ function validateCategoryBody(
   const description = typeof body.description === 'string' ? body.description.trim() : undefined;
   const image = typeof body.image === 'string' ? body.image.trim() : undefined;
   const order = typeof body.order === 'number' ? body.order : 0;
-  return { slug, name, description, image, order };
+  const tagline = typeof body.tagline === 'string' ? body.tagline.trim() || undefined : undefined;
+  const metaTitle = typeof body.metaTitle === 'string' ? body.metaTitle.trim() || undefined : undefined;
+  const metaDescription = typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined;
+  return { slug, name, description, image, order, tagline, metaTitle, metaDescription };
 }
 
 /** Admin: GET /api/admin/categories */
@@ -36,6 +39,9 @@ export async function listCategoriesAdmin(req: Request, res: Response): Promise<
         description: c.description,
         image: c.image,
         order: c.order ?? 0,
+        tagline: c.tagline,
+        metaTitle: c.metaTitle,
+        metaDescription: c.metaDescription,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
       })),
@@ -75,6 +81,9 @@ export async function createCategory(req: Request, res: Response): Promise<void>
       description: inserted?.description,
       image: inserted?.image,
       order: inserted?.order ?? 0,
+      tagline: inserted?.tagline,
+      metaTitle: inserted?.metaTitle,
+      metaDescription: inserted?.metaDescription,
       createdAt: inserted?.createdAt,
       updatedAt: inserted?.updatedAt,
     });
@@ -120,6 +129,9 @@ export async function updateCategory(req: Request, res: Response): Promise<void>
           description: parsed.description,
           image: parsed.image,
           order: parsed.order,
+          tagline: parsed.tagline,
+          metaTitle: parsed.metaTitle,
+          metaDescription: parsed.metaDescription,
           updatedAt: now,
         },
       }
@@ -132,6 +144,9 @@ export async function updateCategory(req: Request, res: Response): Promise<void>
       description: updated?.description,
       image: updated?.image,
       order: updated?.order ?? 0,
+      tagline: updated?.tagline,
+      metaTitle: updated?.metaTitle,
+      metaDescription: updated?.metaDescription,
       createdAt: updated?.createdAt,
       updatedAt: updated?.updatedAt,
     });

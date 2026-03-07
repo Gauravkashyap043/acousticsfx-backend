@@ -58,6 +58,80 @@ export async function listBlogs(req: Request, res: Response): Promise<void> {
   }
 }
 
+/** GET /api/resources/case-studies – public list */
+export async function listCaseStudiesPublic(req: Request, res: Response): Promise<void> {
+  try {
+    const items = await getCaseStudyCollection()
+      .find({})
+      .sort({ order: 1, createdAt: -1 })
+      .toArray();
+    const stripId = (arr: CaseStudy[]) =>
+      arr.map(({ _id, ...rest }) => ({ ...rest, _id: _id?.toString() }));
+    res.json({ success: true, caseStudies: stripId(items) });
+  } catch (err) {
+    console.error('listCaseStudiesPublic error:', err);
+    res.status(500).json({ error: 'Failed to fetch case studies' });
+  }
+}
+
+/** GET /api/resources/case-studies/slug/:slug – public by slug */
+export async function getCaseStudyBySlug(req: Request, res: Response): Promise<void> {
+  try {
+    const slug = validateSlug(req.params['slug']);
+    if (!slug) {
+      res.status(400).json({ error: 'Invalid slug' });
+      return;
+    }
+    const item = await getCaseStudyCollection().findOne({ slug });
+    if (!item) {
+      res.status(404).json({ error: 'Case study not found' });
+      return;
+    }
+    const { _id, ...rest } = item;
+    res.json({ success: true, caseStudy: { ...rest, _id: _id?.toString() } });
+  } catch (err) {
+    console.error('getCaseStudyBySlug error:', err);
+    res.status(500).json({ error: 'Failed to fetch case study' });
+  }
+}
+
+/** GET /api/resources/events – public list */
+export async function listEventsPublic(req: Request, res: Response): Promise<void> {
+  try {
+    const items = await getEventCollection()
+      .find({})
+      .sort({ eventDate: -1, createdAt: -1 })
+      .toArray();
+    const stripId = (arr: Event[]) =>
+      arr.map(({ _id, ...rest }) => ({ ...rest, _id: _id?.toString() }));
+    res.json({ success: true, events: stripId(items) });
+  } catch (err) {
+    console.error('listEventsPublic error:', err);
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+}
+
+/** GET /api/resources/events/slug/:slug – public by slug */
+export async function getEventBySlug(req: Request, res: Response): Promise<void> {
+  try {
+    const slug = validateSlug(req.params['slug']);
+    if (!slug) {
+      res.status(400).json({ error: 'Invalid slug' });
+      return;
+    }
+    const item = await getEventCollection().findOne({ slug });
+    if (!item) {
+      res.status(404).json({ error: 'Event not found' });
+      return;
+    }
+    const { _id, ...rest } = item;
+    res.json({ success: true, event: { ...rest, _id: _id?.toString() } });
+  } catch (err) {
+    console.error('getEventBySlug error:', err);
+    res.status(500).json({ error: 'Failed to fetch event' });
+  }
+}
+
 /** GET /api/blogs/slug/:slug – public; only returns published blogs */
 export async function getBlogBySlug(req: Request, res: Response): Promise<void> {
   try {
