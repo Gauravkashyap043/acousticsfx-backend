@@ -99,6 +99,12 @@ export interface ProductCategory {
   description?: string;
   image?: string;
   order?: number;
+  /** Optional short tagline shown under category name */
+  tagline?: string;
+  /** SEO meta title (falls back to name if empty) */
+  metaTitle?: string;
+  /** SEO meta description */
+  metaDescription?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -128,8 +134,84 @@ export interface SubProductGallerySlide {
   small: string;
 }
 
+/** Gallery image (single image; UI derives large/small layout) */
+export interface SubProductGalleryImage {
+  url: string;
+  alt?: string;
+}
+
+/** Single profile option in the \"Product Profiles\" section */
+export interface SubProductProfile {
+  /** Identifier used in UI (e.g. \"1-5x8x8\") */
+  id?: string;
+  /** Display name of the profile (e.g. \"1.5/8x8\") */
+  name: string;
+  /** Optional size text (e.g. \"30 x 30 cm\") */
+  size?: string;
+  /** Optional description or notes */
+  description?: string;
+  /** Image URL used for the preview / swatch */
+  image?: string;
+}
+
+/** Group of profiles plus heading text */
+export interface SubProductProfilesSection {
+  title?: string;
+  description?: string;
+  profiles?: SubProductProfile[];
+}
+
+/** Single substrate option shown in the \"Substrates\" slider */
+export interface SubProductSubstrateItem {
+  name: string;
+  /** Thicknesses or size text, e.g. \"12, 16, 18mm\" */
+  thickness?: string;
+  description?: string;
+  image?: string;
+}
+
+/** Substrates section (title, copy, list of substrate items) */
+export interface SubProductSubstratesSection {
+  title?: string;
+  description?: string;
+  items?: SubProductSubstrateItem[];
+}
+
+/** One tab in the \"About the product\" area (e.g. Advantages, Key Features) */
+export interface SubProductAboutTab {
+  /** Stable key for the tab (e.g. \"advantages\") */
+  key: string;
+  /** Label shown in the tab header */
+  title: string;
+  /** Bullet rows shown inside the tab */
+  rows: string[];
+}
+
+/** Single certification logo row */
+export interface SubProductCertification {
+  name: string;
+  image: string;
+  description?: string;
+}
+
+/** Single finish / shade swatch */
+export interface SubProductFinishShade {
+  name: string;
+  description?: string;
+  image: string;
+}
+
+/** Finishes & shades section (title, copy, list of swatches) */
+export interface SubProductFinishesSection {
+  title?: string;
+  description?: string;
+  items?: SubProductFinishShade[];
+}
+
 /** Sub-product under a product */
 export interface SubProduct {
+  /** Stable id for admin references (stored as string ObjectId) */
+  id?: string;
   slug: string;
   title: string;
   description: string;
@@ -144,6 +226,18 @@ export interface SubProduct {
   specs?: SubProductSpec[];
   /** Gallery slides (each has large + small image) */
   gallerySlides?: SubProductGallerySlide[];
+  /** Gallery images (preferred). Use this; UI derives large/small layout. */
+  galleryImages?: SubProductGalleryImage[];
+  /** Product profiles section (3D preview + profile options) */
+  profilesSection?: SubProductProfilesSection;
+  /** Substrates carousel */
+  substratesSection?: SubProductSubstratesSection;
+  /** Tabs under \"About the product\" */
+  aboutTabs?: SubProductAboutTab[];
+  /** Certifications row */
+  certifications?: SubProductCertification[];
+  /** Finishes & shades slider */
+  finishesSection?: SubProductFinishesSection;
 }
 
 /** Product (acoustic panels, etc.) – belongs to a category via categorySlug */
@@ -162,6 +256,12 @@ export interface Product {
   panelsSectionTitle?: string;
   /** Optional body copy for the panels section */
   panelsSectionDescription?: string;
+  /** Short teaser for cards (falls back to description excerpt if empty) */
+  shortDescription?: string;
+  /** SEO meta title (falls back to title if empty) */
+  metaTitle?: string;
+  /** SEO meta description */
+  metaDescription?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
