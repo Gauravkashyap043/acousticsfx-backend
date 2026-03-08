@@ -69,7 +69,7 @@ export async function create(req: Request, res: Response): Promise<void> {
 /** Admin: PUT /api/admin/locations/:id */
 export async function update(req: Request, res: Response): Promise<void> {
   try {
-    const id = req.params['id'] ?? '';
+    const id = String(req.params['id'] || '');
     if (!ObjectId.isValid(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
 
     const { title, highlight, items, order } = req.body as Record<string, unknown>;
@@ -106,7 +106,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 /** Admin: DELETE /api/admin/locations/:id */
 export async function remove(req: Request, res: Response): Promise<void> {
   try {
-    const id = req.params['id'] ?? '';
+    const id = String(req.params['id'] || '');
     if (!ObjectId.isValid(id)) { res.status(400).json({ error: 'Invalid id' }); return; }
     const result = await getLocationCollection().deleteOne({ _id: new ObjectId(id) });
     if (result.deletedCount === 0) { res.status(404).json({ error: 'Not found' }); return; }

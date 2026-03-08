@@ -34,7 +34,7 @@ export async function list(req: Request, res: Response): Promise<void> {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .project<{ _id: 1; email: 1; createdAt: 1 }>({ _id: 1, email: 1, createdAt: 1 })
+        .project<{ _id: import('mongodb').ObjectId; email: string; createdAt: Date }>({ _id: 1, email: 1, createdAt: 1 })
         .toArray(),
       coll.countDocuments(),
     ]);
