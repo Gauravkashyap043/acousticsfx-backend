@@ -31,26 +31,6 @@ const DEFAULT_PRODUCTS: Omit<Product, '_id' | 'createdAt' | 'updatedAt'>[] = [
         description:
           'Linearlux panels transform sound into an experience. With precision grooves and natural textures, they bring warmth and clarity to demanding interior spaces.',
         image: '/assets/product/product-hero.png',
-        gridIntro: {
-          title: 'Linear grooved acoustic panel',
-          subtitle: 'New Design – Linearlux',
-          body:
-            'A linear grooved acoustic panel is one of the most commonly used multi-groove panels. Suitable for auditoriums, lecture halls, conference rooms and public buildings, linear grooved acoustic panels provide a warm organic surface effect.',
-        },
-        gridImages: [
-          {
-            url: '/assets/product/acoustic-feature-1.jpg',
-            alt: 'Linearlux feature wall in meeting room',
-          },
-          {
-            url: '/assets/product/acoustic-feature-2.jpg',
-            alt: 'Timber slatted ceiling installation',
-          },
-          {
-            url: '/assets/product/gallery-image-1.jpg',
-            alt: 'Detail of linear grooves and joints',
-          },
-        ],
         specDescription:
           'High-end, high-efficiency acoustic lining system with a range of design and performance options. When fitted in plank form, this product creates an exquisite grooved look with perfect jointing.',
         specs: [
