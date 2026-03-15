@@ -20,7 +20,8 @@ import faqRoutes from './routes/faqs.js';
 const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+// JSON body limit (upload uses multipart and is limited in middleware/upload.ts to 20MB)
+app.use(express.json({ limit: '20mb' }));
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });

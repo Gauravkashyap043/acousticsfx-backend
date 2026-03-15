@@ -1,7 +1,9 @@
 import multer from 'multer';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+/** Max file size for image uploads (20MB). Must match Nginx client_max_body_size. */
+export const UPLOAD_MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20MB
+const MAX_SIZE = UPLOAD_MAX_FILE_SIZE_BYTES;
 
 const storage = multer.memoryStorage();
 
