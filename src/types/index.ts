@@ -203,6 +203,8 @@ export interface SubProduct {
   title: string;
   description: string;
   image: string;
+  /** If true, frontend shows "™" after the sub-product title (trademark) */
+  showTrademark?: boolean;
   /** Long description in spec section */
   specDescription?: string;
   /** Spec rows (label / value) */

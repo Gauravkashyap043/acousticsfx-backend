@@ -183,6 +183,9 @@ function validateSubProduct(raw: unknown): SubProduct | { error: string } {
     image,
   };
 
+  const showTrademark = o.showTrademark === true;
+  if (showTrademark) sub.showTrademark = true;
+
   const specDescription =
     typeof o.specDescription === 'string' && o.specDescription.trim()
       ? o.specDescription.trim()
@@ -444,6 +447,7 @@ export async function getSubProductBySlug(req: Request, res: Response): Promise<
         title: sub.title,
         description: sub.description,
         image: sub.image,
+        showTrademark: sub.showTrademark,
         specDescription: sub.specDescription,
         specs: sub.specs,
         galleryImages: sub.galleryImages,
