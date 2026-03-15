@@ -6,8 +6,6 @@ import type {
   Product,
   SubProduct,
   ProductCategory,
-  SubProductGridIntro,
-  SubProductGridImage,
   SubProductSpec,
   SubProductGallerySlide,
   SubProductGalleryImage,
@@ -23,25 +21,6 @@ const SLUG_REGEX = /^[a-zA-Z0-9-]+$/;
 function validateSlug(s: unknown): string | null {
   if (typeof s !== 'string' || !s.trim()) return null;
   return SLUG_REGEX.test(s) ? s.trim() : null;
-}
-
-function validateGridIntro(raw: unknown): SubProductGridIntro | undefined {
-  if (!raw || typeof raw !== 'object') return undefined;
-  const o = raw as Record<string, unknown>;
-  const title = typeof o.title === 'string' ? o.title.trim() : undefined;
-  const subtitle = typeof o.subtitle === 'string' ? o.subtitle.trim() : undefined;
-  const body = typeof o.body === 'string' ? o.body.trim() : undefined;
-  if (!title && !subtitle && !body) return undefined;
-  return { title, subtitle, body };
-}
-
-function validateGridImage(raw: unknown): SubProductGridImage | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const o = raw as Record<string, unknown>;
-  const url = typeof o.url === 'string' && o.url.trim() ? o.url.trim() : '';
-  if (!url) return null;
-  const alt = typeof o.alt === 'string' ? o.alt.trim() : undefined;
-  return { url, alt };
 }
 
 function validateSpec(raw: unknown): SubProductSpec | null {
@@ -204,17 +183,8 @@ function validateSubProduct(raw: unknown): SubProduct | { error: string } {
     image,
   };
 
-  const gridIntro = validateGridIntro(o.gridIntro);
-  if (gridIntro) sub.gridIntro = gridIntro;
-
-  if (Array.isArray(o.gridImages)) {
-    const gridImages: SubProductGridImage[] = [];
-    for (const item of o.gridImages) {
-      const img = validateGridImage(item);
-      if (img) gridImages.push(img);
-    }
-    if (gridImages.length) sub.gridImages = gridImages;
-  }
+  const showTrademark = o.showTrademark === true;
+  if (showTrademark) sub.showTrademark = true;
 
   const specDescription =
     typeof o.specDescription === 'string' && o.specDescription.trim()
@@ -477,8 +447,7 @@ export async function getSubProductBySlug(req: Request, res: Response): Promise<
         title: sub.title,
         description: sub.description,
         image: sub.image,
-        gridIntro: sub.gridIntro,
-        gridImages: sub.gridImages,
+        showTrademark: sub.showTrademark,
         specDescription: sub.specDescription,
         specs: sub.specs,
         galleryImages: sub.galleryImages,

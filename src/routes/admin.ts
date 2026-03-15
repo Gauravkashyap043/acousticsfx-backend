@@ -14,8 +14,10 @@ import * as footerLinkController from '../controllers/footerLinkController.js';
 import * as locationController from '../controllers/locationController.js';
 import * as faqController from '../controllers/faqController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
-import { uploadImageMiddleware } from '../middleware/upload.js';
+import { uploadImageMiddleware, UPLOAD_MAX_FILE_SIZE_BYTES } from '../middleware/upload.js';
 import { PERMISSIONS } from '../lib/permissions.js';
+
+const UPLOAD_MAX_MB = Math.round(UPLOAD_MAX_FILE_SIZE_BYTES / (1024 * 1024));
 
 const router = Router();
 
@@ -28,7 +30,13 @@ router.post(
   (req, res, next) => {
     uploadImageMiddleware(req, res, (err) => {
       if (err) {
-        res.status(400).json({ error: err.message || 'Invalid file' });
+        const isFileTooLarge =
+          err instanceof Error && 'code' in err && (err as { code?: string }).code === 'LIMIT_FILE_SIZE';
+        if (isFileTooLarge) {
+          res.status(413).json({ error: `File too large. Maximum size is ${UPLOAD_MAX_MB}MB.` });
+          return;
+        }
+        res.status(400).json({ error: err instanceof Error ? err.message : 'Invalid file' });
         return;
       }
       next();

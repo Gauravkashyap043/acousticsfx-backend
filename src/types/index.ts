@@ -109,19 +109,6 @@ export interface ProductCategory {
   updatedAt?: Date;
 }
 
-/** Grid intro block (title, subtitle, body) for sub-product page */
-export interface SubProductGridIntro {
-  title?: string;
-  subtitle?: string;
-  body?: string;
-}
-
-/** Single image in grid section */
-export interface SubProductGridImage {
-  url: string;
-  alt?: string;
-}
-
 /** Single spec row (label / value) */
 export interface SubProductSpec {
   label: string;
@@ -216,10 +203,8 @@ export interface SubProduct {
   title: string;
   description: string;
   image: string;
-  /** Optional intro block for grid section (title, subtitle, body) */
-  gridIntro?: SubProductGridIntro;
-  /** Images for grid section (e.g. 3: right small, left small, right big) */
-  gridImages?: SubProductGridImage[];
+  /** If true, frontend shows "™" after the sub-product title (trademark) */
+  showTrademark?: boolean;
   /** Long description in spec section */
   specDescription?: string;
   /** Spec rows (label / value) */

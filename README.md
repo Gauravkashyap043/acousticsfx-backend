@@ -129,6 +129,20 @@ To add a role or permission: edit `src/lib/permissions.ts` (ROLE_PERMISSIONS and
 
 - **`npm run seed:content`**: Inserts default content keys only when each key does not already exist (idempotent). Does not overwrite existing values. Default keys include `home.hero.title`, `home.hero.subtitle`, `home.hero.backgroundImage`, `about.hero.heading`, `about.hero.subtitle`, `about.hero.backgroundImage`. Safe to run multiple times; logs "Inserted: N, skipped: M".
 
+## Image upload and body size (413 / large files)
+
+Admin image upload (`POST /api/admin/upload-image`) accepts files up to **20MB** (multer limit in `src/middleware/upload.ts`). If uploads over ~1–2MB fail with **413 Payload Too Large** or the request never reaches the app, the limit is usually in the **reverse proxy** (e.g. Nginx), not in Express.
+
+**Nginx:** In your `server` or `http` block set:
+
+```nginx
+client_max_body_size 20M;
+```
+
+Then reload Nginx: `sudo nginx -t && sudo systemctl reload nginx` (or your reload command).
+
+**Other hosts:** Check the docs for “request body size” or “max upload size” and set it to at least 20M for the API.
+
 ## Adding a new resource
 
 1. **Types**: Add interface in `src/types/index.ts` if shared.
