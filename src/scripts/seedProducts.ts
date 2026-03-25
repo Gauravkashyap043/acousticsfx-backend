@@ -3,7 +3,7 @@
  * Run (from acousticsfx-backend): npx tsx src/scripts/seedProducts.ts
  *
  * This inserts a demo Acoustic product and a Linearlux sub-product
- * with all the rich sections used on the product detail page.
+ * with rich sections used on the product detail page.
  */
 import { connectDb, disconnectDb } from '../config/db.js';
 import { getProductCollection } from '../models/Product.js';

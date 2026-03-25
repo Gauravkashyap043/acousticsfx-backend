@@ -183,8 +183,14 @@ function validateSubProduct(raw: unknown): SubProduct | { error: string } {
     image,
   };
 
-  const showTrademark = o.showTrademark === true;
-  if (showTrademark) sub.showTrademark = true;
+  if ('showTrademark' in o) {
+    sub.showTrademark = o.showTrademark === true;
+  }
+
+  if ('specSectionTitle' in o) {
+    const t = typeof o.specSectionTitle === 'string' ? o.specSectionTitle.trim() : '';
+    sub.specSectionTitle = t || undefined;
+  }
 
   const specDescription =
     typeof o.specDescription === 'string' && o.specDescription.trim()
@@ -236,8 +242,22 @@ function validateSubProduct(raw: unknown): SubProduct | { error: string } {
   const aboutTabs = validateAboutTabs(o.aboutTabs);
   if (aboutTabs) sub.aboutTabs = aboutTabs;
 
-  const certifications = validateCertifications(o.certifications);
-  if (certifications) sub.certifications = certifications;
+  if ('certificationsSectionTitle' in o) {
+    const t = typeof o.certificationsSectionTitle === 'string' ? o.certificationsSectionTitle.trim() : '';
+    sub.certificationsSectionTitle = t || undefined;
+  }
+  if ('certificationsSectionDescription' in o) {
+    const t =
+      typeof o.certificationsSectionDescription === 'string'
+        ? o.certificationsSectionDescription.trim()
+        : '';
+    sub.certificationsSectionDescription = t || undefined;
+  }
+
+  if ('certifications' in o) {
+    const certifications = validateCertifications(o.certifications);
+    sub.certifications = certifications && certifications.length ? certifications : undefined;
+  }
 
   const finishesSection = validateFinishesSection(o.finishesSection);
   if (finishesSection) sub.finishesSection = finishesSection;
@@ -270,7 +290,23 @@ function validateProductBody(
   const shortDescription = typeof body.shortDescription === 'string' ? body.shortDescription.trim() || undefined : undefined;
   const metaTitle = typeof body.metaTitle === 'string' ? body.metaTitle.trim() || undefined : undefined;
   const metaDescription = typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined;
-  return { slug, title, description, image, heroImage, subProducts, order, categorySlug, panelsSectionTitle, panelsSectionDescription, shortDescription, metaTitle, metaDescription };
+  const showTrademark = body.showTrademark === true;
+  return {
+    slug,
+    title,
+    description,
+    image,
+    heroImage,
+    subProducts,
+    order,
+    categorySlug,
+    panelsSectionTitle,
+    panelsSectionDescription,
+    shortDescription,
+    metaTitle,
+    metaDescription,
+    showTrademark,
+  };
 }
 
 /** Public: GET /api/products – all products (optional ?category=acoustic). No _id in response. */
@@ -288,6 +324,7 @@ export async function listProducts(req: Request, res: Response): Promise<void> {
       heroImage: p.heroImage,
       subProducts: p.subProducts ?? [],
       categorySlug: p.categorySlug,
+      showTrademark: p.showTrademark === true,
       panelsSectionTitle: p.panelsSectionTitle,
       panelsSectionDescription: p.panelsSectionDescription,
       shortDescription: p.shortDescription,
@@ -349,6 +386,7 @@ export async function getCategoryBySlug(req: Request, res: Response): Promise<vo
       image: p.image,
       heroImage: p.heroImage,
       subProducts: p.subProducts ?? [],
+      showTrademark: p.showTrademark === true,
       panelsSectionTitle: p.panelsSectionTitle,
       panelsSectionDescription: p.panelsSectionDescription,
       shortDescription: p.shortDescription,
@@ -396,6 +434,7 @@ export async function getProductBySlug(req: Request, res: Response): Promise<voi
       heroImage: product.heroImage,
       subProducts: product.subProducts ?? [],
       categorySlug: product.categorySlug,
+      showTrademark: product.showTrademark === true,
       panelsSectionTitle: product.panelsSectionTitle,
       panelsSectionDescription: product.panelsSectionDescription,
       shortDescription: product.shortDescription,
@@ -440,6 +479,7 @@ export async function getSubProductBySlug(req: Request, res: Response): Promise<
         slug: product.slug,
         title: product.title,
         categorySlug: product.categorySlug,
+        showTrademark: product.showTrademark === true,
       },
       subProduct: {
         id: sub.id,
@@ -447,13 +487,16 @@ export async function getSubProductBySlug(req: Request, res: Response): Promise<
         title: sub.title,
         description: sub.description,
         image: sub.image,
-        showTrademark: sub.showTrademark,
+        showTrademark: sub.showTrademark === true,
+        specSectionTitle: sub.specSectionTitle,
         specDescription: sub.specDescription,
         specs: sub.specs,
         galleryImages: sub.galleryImages,
         profilesSection: sub.profilesSection,
         substratesSection: sub.substratesSection,
         aboutTabs: sub.aboutTabs,
+        certificationsSectionTitle: sub.certificationsSectionTitle,
+        certificationsSectionDescription: sub.certificationsSectionDescription,
         certifications: sub.certifications,
         finishesSection: sub.finishesSection,
       },
@@ -485,6 +528,7 @@ export async function listProductsAdmin(req: Request, res: Response): Promise<vo
         shortDescription: p.shortDescription,
         metaTitle: p.metaTitle,
         metaDescription: p.metaDescription,
+        showTrademark: p.showTrademark === true,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
       })),
@@ -532,6 +576,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
       shortDescription: inserted?.shortDescription,
       metaTitle: inserted?.metaTitle,
       metaDescription: inserted?.metaDescription,
+      showTrademark: inserted?.showTrademark === true,
       createdAt: inserted?.createdAt,
       updatedAt: inserted?.updatedAt,
     });
@@ -585,6 +630,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
           shortDescription: parsed.shortDescription,
           metaTitle: parsed.metaTitle,
           metaDescription: parsed.metaDescription,
+          showTrademark: parsed.showTrademark,
           updatedAt: now,
         },
       }
@@ -605,6 +651,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       shortDescription: updated?.shortDescription,
       metaTitle: updated?.metaTitle,
       metaDescription: updated?.metaDescription,
+      showTrademark: updated?.showTrademark === true,
       createdAt: updated?.createdAt,
       updatedAt: updated?.updatedAt,
     });
@@ -695,6 +742,8 @@ export async function createSubProduct(req: Request, res: Response): Promise<voi
       ...parsed,
       id: new ObjectId().toString(),
     };
+    delete (withId as unknown as Record<string, unknown>).gridIntro;
+    delete (withId as unknown as Record<string, unknown>).gridImages;
     const updated = [...subProducts, withId];
     await coll.updateOne(
       { _id: new ObjectId(productId) },
@@ -741,10 +790,14 @@ export async function updateSubProduct(req: Request, res: Response): Promise<voi
       }
     }
     const existingSub = subProducts[idx];
-    subProducts[idx] = {
+    const merged: SubProduct = {
+      ...existingSub,
       ...parsed,
       id: existingSub?.id ?? new ObjectId().toString(),
     };
+    delete (merged as unknown as Record<string, unknown>).gridIntro;
+    delete (merged as unknown as Record<string, unknown>).gridImages;
+    subProducts[idx] = merged;
     await coll.updateOne(
       { _id: new ObjectId(productId) },
       { $set: { subProducts, updatedAt: new Date() } }

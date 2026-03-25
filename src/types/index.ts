@@ -203,8 +203,10 @@ export interface SubProduct {
   title: string;
   description: string;
   image: string;
-  /** If true, frontend shows "™" after the sub-product title (trademark) */
+  /** When true, public UI appends ™ after the sub-product name */
   showTrademark?: boolean;
+  /** Optional heading above the spec block (default: \"Product Specification\") */
+  specSectionTitle?: string;
   /** Long description in spec section */
   specDescription?: string;
   /** Spec rows (label / value) */
@@ -219,6 +221,10 @@ export interface SubProduct {
   substratesSection?: SubProductSubstratesSection;
   /** Tabs under \"About the product\" */
   aboutTabs?: SubProductAboutTab[];
+  /** Optional heading for certifications block */
+  certificationsSectionTitle?: string;
+  /** Optional intro copy under certifications heading */
+  certificationsSectionDescription?: string;
   /** Certifications row */
   certifications?: SubProductCertification[];
   /** Finishes & shades slider */
@@ -234,6 +240,8 @@ export interface Product {
   image: string;
   heroImage?: string;
   subProducts: SubProduct[];
+  /** When true, public UI appends ™ after the product name */
+  showTrademark?: boolean;
   /** Category slug (e.g. "acoustic") for filtering and URL structure */
   categorySlug?: string;
   order?: number;
