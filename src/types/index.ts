@@ -195,66 +195,43 @@ export interface SubProductFinishesSection {
   items?: SubProductFinishShade[];
 }
 
-/** Sub-product under a product */
-export interface SubProduct {
-  /** Stable id for admin references (stored as string ObjectId) */
-  id?: string;
-  slug: string;
-  title: string;
-  description: string;
-  image: string;
-  /** When true, public UI appends ™ after the sub-product name */
-  showTrademark?: boolean;
-  /** Optional heading above the spec block (default: \"Product Specification\") */
-  specSectionTitle?: string;
-  /** Long description in spec section */
-  specDescription?: string;
-  /** Spec rows (label / value) */
-  specs?: SubProductSpec[];
-  /** Gallery slides (each has large + small image) */
-  gallerySlides?: SubProductGallerySlide[];
-  /** Gallery images (preferred). Use this; UI derives large/small layout. */
-  galleryImages?: SubProductGalleryImage[];
-  /** Product profiles section (3D preview + profile options) */
-  profilesSection?: SubProductProfilesSection;
-  /** Substrates carousel */
-  substratesSection?: SubProductSubstratesSection;
-  /** Tabs under \"About the product\" */
-  aboutTabs?: SubProductAboutTab[];
-  /** Optional heading for certifications block */
-  certificationsSectionTitle?: string;
-  /** Optional intro copy under certifications heading */
-  certificationsSectionDescription?: string;
-  /** Certifications row */
-  certifications?: SubProductCertification[];
-  /** Finishes & shades slider */
-  finishesSection?: SubProductFinishesSection;
-}
-
-/** Product (acoustic panels, etc.) – belongs to a category via categorySlug */
+/**
+ * Product (single sellable SKU / detail page) – belongs to a category via categorySlug.
+ * Former “sub-product” fields live at the top level; there is no nested product/sub-product split.
+ */
 export interface Product {
   _id?: ObjectId;
   slug: string;
   title: string;
   description: string;
+  /** Card / listing image */
   image: string;
   heroImage?: string;
-  subProducts: SubProduct[];
   /** When true, public UI appends ™ after the product name */
   showTrademark?: boolean;
   /** Category slug (e.g. "acoustic") for filtering and URL structure */
   categorySlug?: string;
   order?: number;
-  /** Optional heading for the "Our Acoustic Panels" section on the product page */
-  panelsSectionTitle?: string;
-  /** Optional body copy for the panels section */
-  panelsSectionDescription?: string;
   /** Short teaser for cards (falls back to description excerpt if empty) */
   shortDescription?: string;
   /** SEO meta title (falls back to title if empty) */
   metaTitle?: string;
   /** SEO meta description */
   metaDescription?: string;
+  /** Optional heading above the spec block */
+  specSectionTitle?: string;
+  /** Long description in spec section */
+  specDescription?: string;
+  specs?: SubProductSpec[];
+  gallerySlides?: SubProductGallerySlide[];
+  galleryImages?: SubProductGalleryImage[];
+  profilesSection?: SubProductProfilesSection;
+  substratesSection?: SubProductSubstratesSection;
+  aboutTabs?: SubProductAboutTab[];
+  certificationsSectionTitle?: string;
+  certificationsSectionDescription?: string;
+  certifications?: SubProductCertification[];
+  finishesSection?: SubProductFinishesSection;
   createdAt?: Date;
   updatedAt?: Date;
 }

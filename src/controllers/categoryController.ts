@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ObjectId } from 'mongodb';
 import { getCategoryCollection } from '../models/Category.js';
+import { getProductCollection } from '../models/Product.js';
 import type { ProductCategory } from '../types/index.js';
 
 const SLUG_REGEX = /^[a-zA-Z0-9-]+$/;
@@ -26,11 +27,30 @@ function validateCategoryBody(
   return { slug, name, description, image, order, tagline, metaTitle, metaDescription };
 }
 
-/** Admin: GET /api/admin/categories */
+/** Admin: GET /api/admin/categories — includes products where product.categorySlug matches category.slug */
 export async function listCategoriesAdmin(req: Request, res: Response): Promise<void> {
   try {
     const coll = getCategoryCollection();
     const categories = await coll.find({}).sort({ order: 1, slug: 1 }).toArray();
+
+    const productColl = getProductCollection();
+    const products = await productColl
+      .find(
+        { categorySlug: { $type: 'string', $ne: '' } },
+        { projection: { slug: 1, title: 1, categorySlug: 1, order: 1 } }
+      )
+      .sort({ order: 1, slug: 1 })
+      .toArray();
+
+    const byCategorySlug = new Map<string, { slug: string; title: string }[]>();
+    for (const p of products) {
+      const cs = p.categorySlug;
+      if (typeof cs !== 'string' || !cs.trim()) continue;
+      const list = byCategorySlug.get(cs) ?? [];
+      list.push({ slug: p.slug, title: p.title });
+      byCategorySlug.set(cs, list);
+    }
+
     res.json({
       items: categories.map((c) => ({
         _id: c._id?.toString(),
@@ -44,6 +64,7 @@ export async function listCategoriesAdmin(req: Request, res: Response): Promise<
         metaDescription: c.metaDescription,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
+        linkedProducts: byCategorySlug.get(c.slug) ?? [],
       })),
     });
   } catch (err) {

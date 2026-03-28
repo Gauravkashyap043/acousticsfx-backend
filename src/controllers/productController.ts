@@ -4,7 +4,6 @@ import { getProductCollection } from '../models/Product.js';
 import { getCategoryCollection } from '../models/Category.js';
 import type {
   Product,
-  SubProduct,
   ProductCategory,
   SubProductSpec,
   SubProductGallerySlide,
@@ -165,147 +164,182 @@ function validateFinishesSection(raw: unknown): SubProductFinishesSection | unde
   return { title, description, items };
 }
 
-function validateSubProduct(raw: unknown): SubProduct | { error: string } {
-  if (!raw || typeof raw !== 'object') return { error: 'subProduct must be an object' };
-  const o = raw as Record<string, unknown>;
-  const idRaw = typeof o.id === 'string' ? o.id.trim() : '';
-  const slug = validateSlug(o.slug);
-  if (!slug) return { error: 'subProduct.slug is required and must be alphanumeric with hyphens' };
-  const title = typeof o.title === 'string' && o.title.trim() ? o.title.trim() : null;
-  if (!title) return { error: 'subProduct.title is required' };
-  const description = typeof o.description === 'string' ? o.description.trim() : '';
-  const image = typeof o.image === 'string' && o.image.trim() ? o.image.trim() : '';
-  const sub: SubProduct = {
-    ...(idRaw && ObjectId.isValid(idRaw) ? { id: idRaw } : {}),
-    slug,
-    title,
-    description,
-    image,
-  };
+/** Common slug typo from older content */
+function normalizeProductSlug(slug: string): string {
+  return slug === 'linerlux' ? 'linearlux' : slug;
+}
 
-  if ('showTrademark' in o) {
-    sub.showTrademark = o.showTrademark === true;
-  }
-
+/** Optional detail sections (specs, gallery, profiles, …) from request body */
+function applyRichProductFields(
+  o: Record<string, unknown>,
+  doc: Omit<Product, '_id' | 'createdAt' | 'updatedAt'>
+): void {
   if ('specSectionTitle' in o) {
     const t = typeof o.specSectionTitle === 'string' ? o.specSectionTitle.trim() : '';
-    sub.specSectionTitle = t || undefined;
+    doc.specSectionTitle = t || undefined;
   }
 
   const specDescription =
     typeof o.specDescription === 'string' && o.specDescription.trim()
       ? o.specDescription.trim()
       : undefined;
-  if (specDescription) sub.specDescription = specDescription;
+  if (specDescription) doc.specDescription = specDescription;
 
-  if (Array.isArray(o.specs)) {
+  if ('specs' in o && Array.isArray(o.specs)) {
     const specs: SubProductSpec[] = [];
     for (const item of o.specs) {
       const spec = validateSpec(item);
       if (spec) specs.push(spec);
     }
-    if (specs.length) sub.specs = specs;
+    doc.specs = specs;
   }
 
-  if (Array.isArray(o.gallerySlides)) {
+  if ('gallerySlides' in o && Array.isArray(o.gallerySlides)) {
     const gallerySlides: SubProductGallerySlide[] = [];
     for (const item of o.gallerySlides) {
       const slide = validateGallerySlide(item);
       if (slide) gallerySlides.push(slide);
     }
-    if (gallerySlides.length) sub.gallerySlides = gallerySlides;
+    doc.gallerySlides = gallerySlides;
   }
 
-  if (Array.isArray(o.galleryImages)) {
+  if ('galleryImages' in o && Array.isArray(o.galleryImages)) {
     const galleryImages: SubProductGalleryImage[] = [];
     for (const item of o.galleryImages) {
       const img = validateGalleryImage(item);
       if (img) galleryImages.push(img);
     }
-    if (galleryImages.length) sub.galleryImages = galleryImages;
-  } else if (sub.gallerySlides && sub.gallerySlides.length > 0) {
-    // Back-compat: derive galleryImages from gallerySlides if only slides were provided.
+    doc.galleryImages = galleryImages;
+  } else if (doc.gallerySlides && doc.gallerySlides.length > 0) {
     const derived: SubProductGalleryImage[] = [];
-    for (const s of sub.gallerySlides) {
+    for (const s of doc.gallerySlides) {
       if (s.large) derived.push({ url: s.large });
       if (s.small && s.small !== s.large) derived.push({ url: s.small });
     }
-    if (derived.length) sub.galleryImages = derived;
+    if (derived.length) doc.galleryImages = derived;
   }
 
-  const profilesSection = validateProfilesSection(o.profilesSection);
-  if (profilesSection) sub.profilesSection = profilesSection;
+  if ('profilesSection' in o) {
+    const profilesSection = validateProfilesSection(o.profilesSection);
+    if (profilesSection) doc.profilesSection = profilesSection;
+    else delete doc.profilesSection;
+  }
 
-  const substratesSection = validateSubstratesSection(o.substratesSection);
-  if (substratesSection) sub.substratesSection = substratesSection;
+  if ('substratesSection' in o) {
+    const substratesSection = validateSubstratesSection(o.substratesSection);
+    if (substratesSection) doc.substratesSection = substratesSection;
+    else delete doc.substratesSection;
+  }
 
-  const aboutTabs = validateAboutTabs(o.aboutTabs);
-  if (aboutTabs) sub.aboutTabs = aboutTabs;
+  if ('aboutTabs' in o) {
+    const aboutTabs = validateAboutTabs(o.aboutTabs);
+    if (aboutTabs) doc.aboutTabs = aboutTabs;
+    else delete doc.aboutTabs;
+  }
 
   if ('certificationsSectionTitle' in o) {
     const t = typeof o.certificationsSectionTitle === 'string' ? o.certificationsSectionTitle.trim() : '';
-    sub.certificationsSectionTitle = t || undefined;
+    doc.certificationsSectionTitle = t || undefined;
   }
   if ('certificationsSectionDescription' in o) {
     const t =
       typeof o.certificationsSectionDescription === 'string'
         ? o.certificationsSectionDescription.trim()
         : '';
-    sub.certificationsSectionDescription = t || undefined;
+    doc.certificationsSectionDescription = t || undefined;
   }
 
-  if ('certifications' in o) {
+  if ('certifications' in o && Array.isArray(o.certifications)) {
     const certifications = validateCertifications(o.certifications);
-    sub.certifications = certifications && certifications.length ? certifications : undefined;
+    doc.certifications = certifications && certifications.length > 0 ? certifications : [];
   }
 
-  const finishesSection = validateFinishesSection(o.finishesSection);
-  if (finishesSection) sub.finishesSection = finishesSection;
-
-  return sub;
+  if ('finishesSection' in o) {
+    const finishesSection = validateFinishesSection(o.finishesSection);
+    if (finishesSection) doc.finishesSection = finishesSection;
+    else delete doc.finishesSection;
+  }
 }
 
-function validateProductBody(
+function validateProductDocument(
   body: Record<string, unknown>
 ): Omit<Product, '_id' | 'createdAt' | 'updatedAt'> | { error: string } {
-  const slug = validateSlug(body.slug);
-  if (!slug) return { error: 'slug is required and must be alphanumeric with hyphens' };
+  const slugRaw = validateSlug(body.slug);
+  if (!slugRaw) return { error: 'slug is required and must be alphanumeric with hyphens' };
+  const slug = normalizeProductSlug(slugRaw);
   const title = typeof body.title === 'string' && body.title.trim() ? body.title.trim() : null;
   if (!title) return { error: 'title is required' };
   const description = typeof body.description === 'string' ? body.description.trim() : '';
-  const image = typeof body.image === 'string' ? body.image.trim() : '';
-  const heroImage = typeof body.heroImage === 'string' ? body.heroImage.trim() : undefined;
-  let subProducts: SubProduct[] = [];
-  if (Array.isArray(body.subProducts)) {
-    for (let i = 0; i < body.subProducts.length; i++) {
-      const result = validateSubProduct(body.subProducts[i]);
-      if ('error' in result) return { error: `subProducts[${i}]: ${result.error}` };
-      subProducts.push(result);
-    }
-  }
+  const image = typeof body.image === 'string' && body.image.trim() ? body.image.trim() : '';
+  if (!image) return { error: 'image is required' };
+  const heroImage = typeof body.heroImage === 'string' && body.heroImage.trim() ? body.heroImage.trim() : undefined;
   const order = typeof body.order === 'number' ? body.order : 0;
   const categorySlug = validateSlug(body.categorySlug) ?? undefined;
-  const panelsSectionTitle = typeof body.panelsSectionTitle === 'string' ? body.panelsSectionTitle.trim() : undefined;
-  const panelsSectionDescription = typeof body.panelsSectionDescription === 'string' ? body.panelsSectionDescription.trim() : undefined;
-  const shortDescription = typeof body.shortDescription === 'string' ? body.shortDescription.trim() || undefined : undefined;
+  const shortDescription =
+    typeof body.shortDescription === 'string' ? body.shortDescription.trim() || undefined : undefined;
   const metaTitle = typeof body.metaTitle === 'string' ? body.metaTitle.trim() || undefined : undefined;
-  const metaDescription = typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined;
+  const metaDescription =
+    typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined;
   const showTrademark = body.showTrademark === true;
-  return {
+
+  const doc: Omit<Product, '_id' | 'createdAt' | 'updatedAt'> = {
     slug,
     title,
     description,
     image,
     heroImage,
-    subProducts,
     order,
     categorySlug,
-    panelsSectionTitle,
-    panelsSectionDescription,
     shortDescription,
     metaTitle,
     metaDescription,
     showTrademark,
+  };
+
+  applyRichProductFields(body, doc);
+  return doc;
+}
+
+function productToPublicSummary(p: Product) {
+  return {
+    slug: p.slug,
+    title: p.title,
+    description: p.description,
+    image: p.image,
+    heroImage: p.heroImage,
+    categorySlug: p.categorySlug,
+    showTrademark: p.showTrademark === true,
+    shortDescription: p.shortDescription,
+    metaTitle: p.metaTitle,
+    metaDescription: p.metaDescription,
+  };
+}
+
+function productToPublicFull(p: Product) {
+  return {
+    ...productToPublicSummary(p),
+    specSectionTitle: p.specSectionTitle,
+    specDescription: p.specDescription,
+    specs: p.specs,
+    gallerySlides: p.gallerySlides,
+    galleryImages: p.galleryImages,
+    profilesSection: p.profilesSection,
+    substratesSection: p.substratesSection,
+    aboutTabs: p.aboutTabs,
+    certificationsSectionTitle: p.certificationsSectionTitle,
+    certificationsSectionDescription: p.certificationsSectionDescription,
+    certifications: p.certifications,
+    finishesSection: p.finishesSection,
+  };
+}
+
+function productToAdminItem(p: Product) {
+  return {
+    _id: p._id?.toString(),
+    order: p.order ?? 0,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    ...productToPublicFull(p),
   };
 }
 
@@ -316,21 +350,7 @@ export async function listProducts(req: Request, res: Response): Promise<void> {
     const coll = getProductCollection();
     const filter = categorySlug ? { categorySlug } : {};
     const products = await coll.find(filter).sort({ order: 1, slug: 1 }).toArray();
-    const normalized = products.map((p) => ({
-      slug: p.slug,
-      title: p.title,
-      description: p.description,
-      image: p.image,
-      heroImage: p.heroImage,
-      subProducts: p.subProducts ?? [],
-      categorySlug: p.categorySlug,
-      showTrademark: p.showTrademark === true,
-      panelsSectionTitle: p.panelsSectionTitle,
-      panelsSectionDescription: p.panelsSectionDescription,
-      shortDescription: p.shortDescription,
-      metaTitle: p.metaTitle,
-      metaDescription: p.metaDescription,
-    }));
+    const normalized = products.map((p) => productToPublicSummary(p));
     res.json({ products: normalized });
   } catch (err) {
     console.error('listProducts error:', err);
@@ -379,20 +399,7 @@ export async function getCategoryBySlug(req: Request, res: Response): Promise<vo
       .find({ categorySlug: slug })
       .sort({ order: 1, slug: 1 })
       .toArray();
-    const normalizedProducts = products.map((p) => ({
-      slug: p.slug,
-      title: p.title,
-      description: p.description,
-      image: p.image,
-      heroImage: p.heroImage,
-      subProducts: p.subProducts ?? [],
-      showTrademark: p.showTrademark === true,
-      panelsSectionTitle: p.panelsSectionTitle,
-      panelsSectionDescription: p.panelsSectionDescription,
-      shortDescription: p.shortDescription,
-      metaTitle: p.metaTitle,
-      metaDescription: p.metaDescription,
-    }));
+    const normalizedProducts = products.map((p) => productToPublicSummary(p));
     res.json({
       category: {
         slug: category.slug,
@@ -415,95 +422,22 @@ export async function getCategoryBySlug(req: Request, res: Response): Promise<vo
 /** Public: GET /api/products/slug/:productSlug – single product details by slug (for /products/:category/:productSlug). */
 export async function getProductBySlug(req: Request, res: Response): Promise<void> {
   try {
-    const slug = validateSlug(req.params['productSlug']);
-    if (!slug) {
+    const slugRaw = validateSlug(req.params['productSlug']);
+    if (!slugRaw) {
       res.status(400).json({ error: 'Invalid product slug' });
       return;
     }
+    const slug = normalizeProductSlug(slugRaw);
     const coll = getProductCollection();
     const product = await coll.findOne({ slug });
     if (!product) {
       res.status(404).json({ error: 'Product not found' });
       return;
     }
-    res.json({
-      slug: product.slug,
-      title: product.title,
-      description: product.description,
-      image: product.image,
-      heroImage: product.heroImage,
-      subProducts: product.subProducts ?? [],
-      categorySlug: product.categorySlug,
-      showTrademark: product.showTrademark === true,
-      panelsSectionTitle: product.panelsSectionTitle,
-      panelsSectionDescription: product.panelsSectionDescription,
-      shortDescription: product.shortDescription,
-      metaTitle: product.metaTitle,
-      metaDescription: product.metaDescription,
-    });
+    res.json(productToPublicFull(product));
   } catch (err) {
     console.error('getProductBySlug error:', err);
     res.status(500).json({ error: 'Failed to fetch product' });
-  }
-}
-
-/** Sub-product slug alias (e.g. common typo linerlux → linearlux) */
-function normalizeSubProductSlug(slug: string): string {
-  return slug === 'linerlux' ? 'linearlux' : slug;
-}
-
-/** Public: GET /api/products/slug/:productSlug/sub-products/:subProductSlug – sub-product details. */
-export async function getSubProductBySlug(req: Request, res: Response): Promise<void> {
-  try {
-    const productSlug = validateSlug(req.params['productSlug']);
-    const subProductSlugRaw = validateSlug(req.params['subProductSlug']);
-    if (!productSlug || !subProductSlugRaw) {
-      res.status(400).json({ error: 'Invalid product or sub-product slug' });
-      return;
-    }
-    const subProductSlug = normalizeSubProductSlug(subProductSlugRaw);
-    const coll = getProductCollection();
-    const product = await coll.findOne({ slug: productSlug });
-    if (!product) {
-      res.status(404).json({ error: 'Product not found' });
-      return;
-    }
-    const subProducts = product.subProducts ?? [];
-    const sub = subProducts.find((s) => s.slug === subProductSlug);
-    if (!sub) {
-      res.status(404).json({ error: 'Sub-product not found' });
-      return;
-    }
-    res.json({
-      product: {
-        slug: product.slug,
-        title: product.title,
-        categorySlug: product.categorySlug,
-        showTrademark: product.showTrademark === true,
-      },
-      subProduct: {
-        id: sub.id,
-        slug: sub.slug,
-        title: sub.title,
-        description: sub.description,
-        image: sub.image,
-        showTrademark: sub.showTrademark === true,
-        specSectionTitle: sub.specSectionTitle,
-        specDescription: sub.specDescription,
-        specs: sub.specs,
-        galleryImages: sub.galleryImages,
-        profilesSection: sub.profilesSection,
-        substratesSection: sub.substratesSection,
-        aboutTabs: sub.aboutTabs,
-        certificationsSectionTitle: sub.certificationsSectionTitle,
-        certificationsSectionDescription: sub.certificationsSectionDescription,
-        certifications: sub.certifications,
-        finishesSection: sub.finishesSection,
-      },
-    });
-  } catch (err) {
-    console.error('getSubProductBySlug error:', err);
-    res.status(500).json({ error: 'Failed to fetch sub-product' });
   }
 }
 
@@ -513,25 +447,7 @@ export async function listProductsAdmin(req: Request, res: Response): Promise<vo
     const coll = getProductCollection();
     const products = await coll.find({}).sort({ order: 1, slug: 1 }).toArray();
     res.json({
-      items: products.map((p) => ({
-        _id: p._id?.toString(),
-        slug: p.slug,
-        title: p.title,
-        description: p.description,
-        image: p.image,
-        heroImage: p.heroImage,
-        subProducts: p.subProducts ?? [],
-        categorySlug: p.categorySlug,
-        order: p.order ?? 0,
-        panelsSectionTitle: p.panelsSectionTitle,
-        panelsSectionDescription: p.panelsSectionDescription,
-        shortDescription: p.shortDescription,
-        metaTitle: p.metaTitle,
-        metaDescription: p.metaDescription,
-        showTrademark: p.showTrademark === true,
-        createdAt: p.createdAt,
-        updatedAt: p.updatedAt,
-      })),
+      items: products.map((p) => productToAdminItem(p)),
     });
   } catch (err) {
     console.error('listProductsAdmin error:', err);
@@ -542,7 +458,7 @@ export async function listProductsAdmin(req: Request, res: Response): Promise<vo
 /** Admin: POST /api/admin/products */
 export async function createProduct(req: Request, res: Response): Promise<void> {
   try {
-    const parsed = validateProductBody(req.body as Record<string, unknown>);
+    const parsed = validateProductDocument(req.body as Record<string, unknown>);
     if ('error' in parsed) {
       res.status(400).json({ error: parsed.error });
       return;
@@ -561,25 +477,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
     } as Product;
     const result = await coll.insertOne(doc as Product);
     const inserted = await coll.findOne({ _id: result.insertedId });
-    res.status(201).json({
-      _id: inserted?._id?.toString(),
-      slug: inserted?.slug,
-      title: inserted?.title,
-      description: inserted?.description,
-      image: inserted?.image,
-      heroImage: inserted?.heroImage,
-      subProducts: inserted?.subProducts ?? [],
-      categorySlug: inserted?.categorySlug,
-      order: inserted?.order ?? 0,
-      panelsSectionTitle: inserted?.panelsSectionTitle,
-      panelsSectionDescription: inserted?.panelsSectionDescription,
-      shortDescription: inserted?.shortDescription,
-      metaTitle: inserted?.metaTitle,
-      metaDescription: inserted?.metaDescription,
-      showTrademark: inserted?.showTrademark === true,
-      createdAt: inserted?.createdAt,
-      updatedAt: inserted?.updatedAt,
-    });
+    res.status(201).json(inserted ? productToAdminItem(inserted) : null);
   } catch (err) {
     console.error('createProduct error:', err);
     res.status(500).json({ error: 'Failed to create product' });
@@ -594,7 +492,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       res.status(400).json({ error: 'Invalid product id' });
       return;
     }
-    const parsed = validateProductBody(req.body as Record<string, unknown>);
+    const parsed = validateProductDocument(req.body as Record<string, unknown>);
     if ('error' in parsed) {
       res.status(400).json({ error: parsed.error });
       return;
@@ -613,48 +511,19 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       }
     }
     const now = new Date();
-    await coll.updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $set: {
-          slug: parsed.slug,
-          title: parsed.title,
-          description: parsed.description,
-          image: parsed.image,
-          heroImage: parsed.heroImage,
-          subProducts: parsed.subProducts,
-          categorySlug: parsed.categorySlug,
-          order: parsed.order,
-          panelsSectionTitle: parsed.panelsSectionTitle,
-          panelsSectionDescription: parsed.panelsSectionDescription,
-          shortDescription: parsed.shortDescription,
-          metaTitle: parsed.metaTitle,
-          metaDescription: parsed.metaDescription,
-          showTrademark: parsed.showTrademark,
-          updatedAt: now,
-        },
-      }
-    );
+    const next = {
+      ...existing,
+      ...parsed,
+      _id: existing._id,
+      createdAt: existing.createdAt,
+      updatedAt: now,
+    } as Product;
+    delete (next as unknown as Record<string, unknown>).subProducts;
+    delete (next as unknown as Record<string, unknown>).panelsSectionTitle;
+    delete (next as unknown as Record<string, unknown>).panelsSectionDescription;
+    await coll.replaceOne({ _id: new ObjectId(id) }, next);
     const updated = await coll.findOne({ _id: new ObjectId(id) });
-    res.json({
-      _id: updated?._id?.toString(),
-      slug: updated?.slug,
-      title: updated?.title,
-      description: updated?.description,
-      image: updated?.image,
-      heroImage: updated?.heroImage,
-      subProducts: updated?.subProducts ?? [],
-      categorySlug: updated?.categorySlug,
-      order: updated?.order ?? 0,
-      panelsSectionTitle: updated?.panelsSectionTitle,
-      panelsSectionDescription: updated?.panelsSectionDescription,
-      shortDescription: updated?.shortDescription,
-      metaTitle: updated?.metaTitle,
-      metaDescription: updated?.metaDescription,
-      showTrademark: updated?.showTrademark === true,
-      createdAt: updated?.createdAt,
-      updatedAt: updated?.updatedAt,
-    });
+    res.json(updated ? productToAdminItem(updated) : null);
   } catch (err) {
     console.error('updateProduct error:', err);
     res.status(500).json({ error: 'Failed to update product' });
@@ -679,163 +548,5 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
   } catch (err) {
     console.error('deleteProduct error:', err);
     res.status(500).json({ error: 'Failed to delete product' });
-  }
-}
-
-/** Admin: GET /api/admin/sub-products – list all sub-products (flattened from products) */
-export async function listSubProductsAdmin(req: Request, res: Response): Promise<void> {
-  try {
-    const coll = getProductCollection();
-    const products = await coll.find({}).sort({ order: 1, slug: 1 }).toArray();
-    const items: Array<{
-      productId: string;
-      productSlug: string;
-      productTitle: string;
-      categorySlug?: string;
-      subProduct: SubProduct;
-    }> = [];
-    for (const p of products) {
-      const subProducts = p.subProducts ?? [];
-      for (const sub of subProducts) {
-        items.push({
-          productId: p._id?.toString() ?? '',
-          productSlug: p.slug,
-          productTitle: p.title,
-          categorySlug: p.categorySlug,
-          subProduct: sub,
-        });
-      }
-    }
-    res.json({ items });
-  } catch (err) {
-    console.error('listSubProductsAdmin error:', err);
-    res.status(500).json({ error: 'Failed to fetch sub-products' });
-  }
-}
-
-/** Admin: POST /api/admin/products/:id/sub-products – add sub-product to a product */
-export async function createSubProduct(req: Request, res: Response): Promise<void> {
-  try {
-    const productId = typeof req.params['id'] === 'string' ? req.params['id'] : '';
-    if (!productId || !ObjectId.isValid(productId)) {
-      res.status(400).json({ error: 'Invalid product id' });
-      return;
-    }
-    const parsed = validateSubProduct(req.body as Record<string, unknown>);
-    if ('error' in parsed) {
-      res.status(400).json({ error: parsed.error });
-      return;
-    }
-    const coll = getProductCollection();
-    const product = await coll.findOne({ _id: new ObjectId(productId) });
-    if (!product) {
-      res.status(404).json({ error: 'Product not found' });
-      return;
-    }
-    const subProducts = product.subProducts ?? [];
-    const existing = subProducts.find((s) => s.slug === parsed.slug);
-    if (existing) {
-      res.status(400).json({ error: 'A sub-product with this slug already exists in this product' });
-      return;
-    }
-    const withId: SubProduct = {
-      ...parsed,
-      id: new ObjectId().toString(),
-    };
-    delete (withId as unknown as Record<string, unknown>).gridIntro;
-    delete (withId as unknown as Record<string, unknown>).gridImages;
-    const updated = [...subProducts, withId];
-    await coll.updateOne(
-      { _id: new ObjectId(productId) },
-      { $set: { subProducts: updated, updatedAt: new Date() } }
-    );
-    res.status(201).json({ productId, subProduct: withId });
-  } catch (err) {
-    console.error('createSubProduct error:', err);
-    res.status(500).json({ error: 'Failed to create sub-product' });
-  }
-}
-
-/** Admin: PUT /api/admin/products/:productId/sub-products/:currentSlug – update sub-product */
-export async function updateSubProduct(req: Request, res: Response): Promise<void> {
-  try {
-    const productId = typeof req.params['productId'] === 'string' ? req.params['productId'] : '';
-    const currentSlug = validateSlug(req.params['currentSlug']);
-    if (!productId || !ObjectId.isValid(productId) || !currentSlug) {
-      res.status(400).json({ error: 'Invalid product id or sub-product slug' });
-      return;
-    }
-    const parsed = validateSubProduct(req.body as Record<string, unknown>);
-    if ('error' in parsed) {
-      res.status(400).json({ error: parsed.error });
-      return;
-    }
-    const coll = getProductCollection();
-    const product = await coll.findOne({ _id: new ObjectId(productId) });
-    if (!product) {
-      res.status(404).json({ error: 'Product not found' });
-      return;
-    }
-    const subProducts = [...(product.subProducts ?? [])];
-    const idx = subProducts.findIndex((s) => s.slug === currentSlug);
-    if (idx < 0) {
-      res.status(404).json({ error: 'Sub-product not found' });
-      return;
-    }
-    if (parsed.slug !== currentSlug) {
-      const slugTaken = subProducts.some((s, i) => i !== idx && s.slug === parsed.slug);
-      if (slugTaken) {
-        res.status(400).json({ error: 'A sub-product with this slug already exists in this product' });
-        return;
-      }
-    }
-    const existingSub = subProducts[idx];
-    const merged: SubProduct = {
-      ...existingSub,
-      ...parsed,
-      id: existingSub?.id ?? new ObjectId().toString(),
-    };
-    delete (merged as unknown as Record<string, unknown>).gridIntro;
-    delete (merged as unknown as Record<string, unknown>).gridImages;
-    subProducts[idx] = merged;
-    await coll.updateOne(
-      { _id: new ObjectId(productId) },
-      { $set: { subProducts, updatedAt: new Date() } }
-    );
-    res.json({ productId, subProduct: subProducts[idx] });
-  } catch (err) {
-    console.error('updateSubProduct error:', err);
-    res.status(500).json({ error: 'Failed to update sub-product' });
-  }
-}
-
-/** Admin: DELETE /api/admin/products/:productId/sub-products/:slug */
-export async function deleteSubProduct(req: Request, res: Response): Promise<void> {
-  try {
-    const productId = typeof req.params['productId'] === 'string' ? req.params['productId'] : '';
-    const slug = validateSlug(req.params['slug']);
-    if (!productId || !ObjectId.isValid(productId) || !slug) {
-      res.status(400).json({ error: 'Invalid product id or sub-product slug' });
-      return;
-    }
-    const coll = getProductCollection();
-    const product = await coll.findOne({ _id: new ObjectId(productId) });
-    if (!product) {
-      res.status(404).json({ error: 'Product not found' });
-      return;
-    }
-    const subProducts = (product.subProducts ?? []).filter((s) => s.slug !== slug);
-    if (subProducts.length === (product.subProducts ?? []).length) {
-      res.status(404).json({ error: 'Sub-product not found' });
-      return;
-    }
-    await coll.updateOne(
-      { _id: new ObjectId(productId) },
-      { $set: { subProducts, updatedAt: new Date() } }
-    );
-    res.status(204).send();
-  } catch (err) {
-    console.error('deleteSubProduct error:', err);
-    res.status(500).json({ error: 'Failed to delete sub-product' });
   }
 }

@@ -14,6 +14,38 @@ function getImageKitClient(): ImageKit | null {
 }
 
 /**
+ * GET /api/admin/upload-image-auth
+ * Returns ImageKit client-upload params so the browser can POST the file directly to ImageKit
+ * (avoids sending the full image through your API server — much faster when API is remote).
+ */
+export async function getImageKitUploadAuth(req: Request, res: Response): Promise<void> {
+  try {
+    const client = getImageKitClient();
+    if (!client) {
+      res.status(503).json({ error: 'Image upload is not configured (ImageKit)' });
+      return;
+    }
+    const publicKey = env.IMAGEKIT_PUBLIC_KEY?.trim();
+    if (!publicKey) {
+      res.status(503).json({
+        error: 'IMAGEKIT_PUBLIC_KEY is not set; use POST /api/admin/upload-image instead.',
+      });
+      return;
+    }
+    const auth = client.helper.getAuthenticationParameters();
+    res.json({
+      token: auth.token,
+      expire: auth.expire,
+      signature: auth.signature,
+      publicKey,
+    });
+  } catch (err) {
+    console.error('getImageKitUploadAuth error:', err);
+    res.status(500).json({ error: 'Failed to create upload credentials' });
+  }
+}
+
+/**
  * POST /api/admin/upload-image
  * Expects multipart/form-data with field "file". Returns { url } from ImageKit.
  */

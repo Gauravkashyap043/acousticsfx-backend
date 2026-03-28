@@ -21,6 +21,13 @@ const router = Router();
 
 router.use(requireAuth);
 
+/** Short-lived ImageKit auth for direct browser uploads (no file body). Requires resources:write. */
+router.get(
+  '/upload-image-auth',
+  requirePermission(PERMISSIONS.RESOURCES_WRITE),
+  uploadController.getImageKitUploadAuth
+);
+
 /** Upload image to ImageKit. Requires resources:write. */
 router.post(
   '/upload-image',
@@ -192,28 +199,6 @@ router.delete(
   '/products/:id',
   requirePermission(PERMISSIONS.PRODUCTS_WRITE),
   productController.deleteProduct
-);
-
-/** Sub-products: list (flattened), create, update, delete */
-router.get(
-  '/sub-products',
-  requirePermission(PERMISSIONS.PRODUCTS_READ),
-  productController.listSubProductsAdmin
-);
-router.post(
-  '/products/:id/sub-products',
-  requirePermission(PERMISSIONS.PRODUCTS_WRITE),
-  productController.createSubProduct
-);
-router.put(
-  '/products/:productId/sub-products/:currentSlug',
-  requirePermission(PERMISSIONS.PRODUCTS_WRITE),
-  productController.updateSubProduct
-);
-router.delete(
-  '/products/:productId/sub-products/:slug',
-  requirePermission(PERMISSIONS.PRODUCTS_WRITE),
-  productController.deleteSubProduct
 );
 
 /** Client logos CRUD */
