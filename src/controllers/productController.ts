@@ -22,6 +22,36 @@ function validateSlug(s: unknown): string | null {
   return SLUG_REGEX.test(s) ? s.trim() : null;
 }
 
+/** Escape string for safe use in RegExp (slug is [a-zA-Z0-9-] only; kept for clarity). */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * URL segments like "Acoustics" or "ACOUSTIC" that should map to the canonical DB slug.
+ * Vercel/Linux uses case-sensitive paths; Mongo slug match is exact — this bridges common mistakes.
+ */
+const CATEGORY_SLUG_ALIASES: Record<string, string> = {
+  acoustics: 'acoustic',
+};
+
+/** Resolve public category URL segment to a category document (canonical slug may differ). */
+async function findCategoryBySlugParam(slugParam: string): Promise<ProductCategory | null> {
+  const catColl = getCategoryCollection();
+  const key = slugParam.toLowerCase();
+  const preferred = CATEGORY_SLUG_ALIASES[key] ?? key;
+
+  let doc = await catColl.findOne({ slug: preferred });
+  if (doc) return doc as ProductCategory;
+
+  doc = await catColl.findOne({ slug: slugParam });
+  if (doc) return doc as ProductCategory;
+
+  const re = new RegExp(`^${escapeRegex(slugParam)}$`, 'i');
+  doc = await catColl.findOne({ slug: { $regex: re } });
+  return doc ? (doc as ProductCategory) : null;
+}
+
 function validateSpec(raw: unknown): SubProductSpec | null {
   if (!raw || typeof raw !== 'object') return null;
   const o = raw as Record<string, unknown>;
@@ -346,9 +376,13 @@ function productToAdminItem(p: Product) {
 /** Public: GET /api/products – all products (optional ?category=acoustic). No _id in response. */
 export async function listProducts(req: Request, res: Response): Promise<void> {
   try {
-    const categorySlug = validateSlug(req.query['category'] as string) ?? undefined;
+    const rawCategory = validateSlug(req.query['category'] as string) ?? undefined;
     const coll = getProductCollection();
-    const filter = categorySlug ? { categorySlug } : {};
+    let filter: Record<string, string> = {};
+    if (rawCategory) {
+      const cat = await findCategoryBySlugParam(rawCategory);
+      filter = { categorySlug: cat?.slug ?? rawCategory };
+    }
     const products = await coll.find(filter).sort({ order: 1, slug: 1 }).toArray();
     const normalized = products.map((p) => productToPublicSummary(p));
     res.json({ products: normalized });
@@ -388,15 +422,15 @@ export async function getCategoryBySlug(req: Request, res: Response): Promise<vo
       res.status(400).json({ error: 'Invalid category slug' });
       return;
     }
-    const catColl = getCategoryCollection();
     const productColl = getProductCollection();
-    const category = await catColl.findOne({ slug });
+    const category = await findCategoryBySlugParam(slug);
     if (!category) {
       res.status(404).json({ error: 'Category not found' });
       return;
     }
+    const canonicalSlug = category.slug;
     const products = await productColl
-      .find({ categorySlug: slug })
+      .find({ categorySlug: canonicalSlug })
       .sort({ order: 1, slug: 1 })
       .toArray();
     const normalizedProducts = products.map((p) => productToPublicSummary(p));
