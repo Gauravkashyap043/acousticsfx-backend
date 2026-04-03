@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { getFooterLinkCollection } from '../models/FooterLink.js';
 import type { FooterLink } from '../types/index.js';
 
-const VALID_SECTIONS = ['services', 'resources'] as const;
+const VALID_SECTIONS = ['resources'] as const;
 
 function toPublic(doc: FooterLink) {
   const { _id, ...rest } = doc;
@@ -17,9 +17,8 @@ export async function listPublic(_req: Request, res: Response): Promise<void> {
       .find({})
       .sort({ section: 1, order: 1, createdAt: -1 })
       .toArray();
-    const services = items.filter((i) => i.section === 'services').map(toPublic);
     const resources = items.filter((i) => i.section === 'resources').map(toPublic);
-    res.json({ services, resources });
+    res.json({ resources });
   } catch (err) {
     console.error('listFooterLinks error:', err);
     res.status(500).json({ error: 'Failed to fetch footer links' });
@@ -45,7 +44,7 @@ export async function create(req: Request, res: Response): Promise<void> {
   try {
     const { section, label, href, order } = req.body as Record<string, unknown>;
     if (!section || !VALID_SECTIONS.includes(section as any))
-      { res.status(400).json({ error: 'section must be "services" or "resources"' }); return; }
+      { res.status(400).json({ error: 'section must be "resources"' }); return; }
     if (!label || typeof label !== 'string' || !label.trim())
       { res.status(400).json({ error: 'label is required' }); return; }
 
@@ -75,7 +74,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 
     const { section, label, href, order } = req.body as Record<string, unknown>;
     if (!section || !VALID_SECTIONS.includes(section as any))
-      { res.status(400).json({ error: 'section must be "services" or "resources"' }); return; }
+      { res.status(400).json({ error: 'section must be "resources"' }); return; }
     if (!label || typeof label !== 'string' || !label.trim())
       { res.status(400).json({ error: 'label is required' }); return; }
 

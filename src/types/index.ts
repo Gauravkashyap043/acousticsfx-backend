@@ -115,6 +115,17 @@ export interface SubProductSpec {
   value: string;
 }
 
+export interface VisualizerTexture {
+  name: string;
+  image: string;
+}
+
+export interface VisualizerDimensions {
+  width: number;
+  height: number;
+  depth: number;
+}
+
 /** Gallery slide (large + small image) */
 export interface SubProductGallerySlide {
   large: string;
@@ -232,6 +243,8 @@ export interface Product {
   certificationsSectionDescription?: string;
   certifications?: SubProductCertification[];
   finishesSection?: SubProductFinishesSection;
+  visualizerTextures?: VisualizerTexture[];
+  visualizerDimensions?: VisualizerDimensions;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -269,7 +282,7 @@ export interface Content {
 /** Footer link item (services / resources columns) */
 export interface FooterLink {
   _id?: ObjectId;
-  section: 'services' | 'resources';
+  section: 'resources';
   label: string;
   href?: string;
   order?: number;

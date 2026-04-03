@@ -3,9 +3,6 @@ import { getFooterLinkCollection } from '../models/FooterLink.js';
 import type { FooterLink } from '../types/index.js';
 
 const DEFAULTS: Omit<FooterLink, '_id' | 'createdAt' | 'updatedAt'>[] = [
-  { section: 'services', label: 'Acoustic Solution', order: 1 },
-  { section: 'services', label: 'Sound Proofing', order: 2 },
-  { section: 'services', label: 'Floor Solution', order: 3 },
   { section: 'resources', label: 'Case Study', href: '/resources/casestudy', order: 1 },
   { section: 'resources', label: 'Careers', order: 2 },
   { section: 'resources', label: 'FX Acoustic In News', order: 3 },

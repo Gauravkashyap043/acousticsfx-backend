@@ -13,6 +13,8 @@ import type {
   SubProductAboutTab,
   SubProductCertification,
   SubProductFinishesSection,
+  VisualizerTexture,
+  VisualizerDimensions,
 } from '../types/index.js';
 
 const SLUG_REGEX = /^[a-zA-Z0-9-]+$/;
@@ -289,6 +291,30 @@ function applyRichProductFields(
     if (finishesSection) doc.finishesSection = finishesSection;
     else delete doc.finishesSection;
   }
+
+  if ('visualizerDimensions' in o && o.visualizerDimensions && typeof o.visualizerDimensions === 'object') {
+    const vd = o.visualizerDimensions as Record<string, unknown>;
+    doc.visualizerDimensions = {
+      width: typeof vd.width === 'number' ? vd.width : 120,
+      height: typeof vd.height === 'number' ? vd.height : 60,
+      depth: typeof vd.depth === 'number' ? vd.depth : 4,
+    };
+  }
+
+  if ('visualizerTextures' in o && Array.isArray(o.visualizerTextures)) {
+    const textures: VisualizerTexture[] = [];
+    for (const item of o.visualizerTextures) {
+      if (item && typeof item === 'object') {
+        const to = item as Record<string, unknown>;
+        const name = typeof to.name === 'string' ? to.name.trim() : '';
+        const image = typeof to.image === 'string' ? to.image.trim() : '';
+        if (name && image) {
+          textures.push({ name, image });
+        }
+      }
+    }
+    doc.visualizerTextures = textures;
+  }
 }
 
 function validateProductDocument(
@@ -360,6 +386,8 @@ function productToPublicFull(p: Product) {
     certificationsSectionDescription: p.certificationsSectionDescription,
     certifications: p.certifications,
     finishesSection: p.finishesSection,
+    visualizerTextures: p.visualizerTextures,
+    visualizerDimensions: p.visualizerDimensions,
   };
 }
 
