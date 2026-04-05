@@ -215,6 +215,21 @@ const DEFAULT_CONTENT: SeedEntry[] = [
     type: 'text',
   },
   {
+    key: 'contact.hero.heading',
+    value: 'Have a Question or confusion:',
+    type: 'text',
+  },
+  {
+    key: 'contact.hero.subtitle',
+    value: 'Contact Us',
+    type: 'text',
+  },
+  {
+    key: 'contact.hero.backgroundImage',
+    value: '/assets/contacts/1d173913fbb7b4adf7587f36d280e8edcf59765a.png',
+    type: 'image',
+  },
+  {
     key: 'home.hero.featureBoxes',
     value: JSON.stringify([
       {
