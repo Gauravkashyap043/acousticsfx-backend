@@ -612,3 +612,118 @@ export async function deleteProduct(req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'Failed to delete product' });
   }
 }
+
+const TEXTURE_PROXY_MAX_BYTES = 15 * 1024 * 1024;
+
+/** Hostnames allowed for texture proxy (comma-separated env override). Default: ImageKit CDN. */
+function getTextureProxyAllowedHosts(): string[] {
+  const raw = process.env.TEXTURE_PROXY_ALLOWED_HOSTS?.trim();
+  if (raw) {
+    return raw
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }
+  return ['ik.imagekit.io'];
+}
+
+function isTextureProxyHostAllowed(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  const allowed = getTextureProxyAllowedHosts();
+  return allowed.some((a) => h === a || h.endsWith(`.${a}`));
+}
+
+function isBlockedTextureHostname(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === 'localhost' || h === '0.0.0.0' || h === '[::1]') return true;
+  if (h.endsWith('.local') || h.endsWith('.internal')) return true;
+  if (h.startsWith('127.')) return true;
+  if (h.startsWith('10.')) return true;
+  if (h.startsWith('192.168.')) return true;
+  if (h.startsWith('172.')) {
+    const parts = h.split('.');
+    const second = parseInt(parts[1] ?? '0', 10);
+    if (second >= 16 && second <= 31) return true;
+  }
+  return false;
+}
+
+/**
+ * Public: GET /api/products/texture-proxy?url=...
+ * Fetches a remote image and streams it with CORS so the browser can use it in Three.js/WebGL
+ * (cross-origin images without CORP/CORS would taint the canvas).
+ */
+export async function proxyVisualizerTexture(req: Request, res: Response): Promise<void> {
+  const raw = req.query['url'];
+  if (typeof raw !== 'string' || !raw.trim()) {
+    res.status(400).json({ error: 'Missing url query parameter' });
+    return;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(raw.trim());
+  } catch {
+    res.status(400).json({ error: 'Invalid URL' });
+    return;
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    res.status(400).json({ error: 'Only http(s) URLs are allowed' });
+    return;
+  }
+
+  const host = parsed.hostname;
+  if (isBlockedTextureHostname(host)) {
+    res.status(400).json({ error: 'Host not allowed' });
+    return;
+  }
+  if (!isTextureProxyHostAllowed(host)) {
+    res.status(403).json({
+      error:
+        'Image host not allowed for texture proxy. Set TEXTURE_PROXY_ALLOWED_HOSTS (comma-separated) on the server.',
+    });
+    return;
+  }
+
+  try {
+    const upstream = await fetch(parsed.href, {
+      redirect: 'follow',
+      headers: { Accept: 'image/*,*/*;q=0.8' },
+    });
+
+    if (!upstream.ok) {
+      res.status(502).json({ error: `Upstream returned ${upstream.status}` });
+      return;
+    }
+
+    const lenHeader = upstream.headers.get('content-length');
+    if (lenHeader) {
+      const n = parseInt(lenHeader, 10);
+      if (!Number.isNaN(n) && n > TEXTURE_PROXY_MAX_BYTES) {
+        res.status(413).json({ error: 'Image too large' });
+        return;
+      }
+    }
+
+    const ct = upstream.headers.get('content-type') || 'application/octet-stream';
+    if (!ct.startsWith('image/')) {
+      res.status(400).json({ error: 'URL did not return an image' });
+      return;
+    }
+
+    const buf = Buffer.from(await upstream.arrayBuffer());
+    if (buf.length > TEXTURE_PROXY_MAX_BYTES) {
+      res.status(413).json({ error: 'Image too large' });
+      return;
+    }
+
+    res.setHeader('Content-Type', ct);
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.send(buf);
+  } catch (err) {
+    console.error('proxyVisualizerTexture error:', err);
+    res.status(500).json({ error: 'Failed to proxy image' });
+  }
+}

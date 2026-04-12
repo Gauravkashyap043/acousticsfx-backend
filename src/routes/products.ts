@@ -3,6 +3,9 @@ import * as productController from '../controllers/productController.js';
 
 const router = Router();
 
+/** Public: proxy remote texture URLs for WebGL (CORS). Must be registered before param routes. */
+router.get('/texture-proxy', productController.proxyVisualizerTexture);
+
 /** Public: list all categories (for nav / products overview) */
 router.get('/categories', productController.listCategories);
 /** Public: category details + products in that category */
