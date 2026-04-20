@@ -115,11 +115,27 @@ export interface SubProductSpec {
   value: string;
 }
 
+/** One perforation pattern (hole grid) for a given uploaded texture. */
+export interface VisualizerHoleProfile {
+  name: string;
+  /** Hole diameter in millimetres. */
+  hole: number;
+  /** Square-centre spacing in millimetres. */
+  spacing: number;
+  /** Optional swatch image for the profile picker (admin upload). */
+  thumbnail?: string;
+}
+
+/**
+ * One admin-uploaded surface texture; each texture carries its own perforation options.
+ */
 export interface VisualizerTexture {
   name: string;
   image: string;
+  profiles: VisualizerHoleProfile[];
 }
 
+/** Panel outer dimensions for the 3D box (centimetres). */
 export interface VisualizerDimensions {
   width: number;
   height: number;
@@ -229,6 +245,8 @@ export interface Product {
   metaTitle?: string;
   /** SEO meta description */
   metaDescription?: string;
+  /** Public URL of the product brochure PDF (e.g. ImageKit) */
+  brochureUrl?: string;
   /** Optional heading above the spec block */
   specSectionTitle?: string;
   /** Long description in spec section */
@@ -243,8 +261,15 @@ export interface Product {
   certificationsSectionDescription?: string;
   certifications?: SubProductCertification[];
   finishesSection?: SubProductFinishesSection;
+  /** 3D configurator: uploaded textures, each with nested hole profiles. */
   visualizerTextures?: VisualizerTexture[];
+  /** Physical panel size (cm) for the WebGL box. */
   visualizerDimensions?: VisualizerDimensions;
+  /** Section heading on the public 3D block. */
+  visualizerTitle?: string;
+  visualizerDescription?: string;
+  /** Hint line under the canvas (e.g. drag to rotate). */
+  visualizerTechnicalCaption?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

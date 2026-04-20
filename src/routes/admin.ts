@@ -14,7 +14,7 @@ import * as footerLinkController from '../controllers/footerLinkController.js';
 import * as locationController from '../controllers/locationController.js';
 import * as faqController from '../controllers/faqController.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
-import { uploadImageMiddleware } from '../middleware/upload.js';
+import { uploadDocumentMiddleware, uploadImageMiddleware } from '../middleware/upload.js';
 import { PERMISSIONS } from '../lib/permissions.js';
 
 const router = Router();
@@ -42,6 +42,22 @@ router.post(
     });
   },
   uploadController.uploadImage
+);
+
+/** Upload PDF (e.g. product brochure) to ImageKit. Requires resources:write. */
+router.post(
+  '/upload-document',
+  requirePermission(PERMISSIONS.RESOURCES_WRITE),
+  (req, res, next) => {
+    uploadDocumentMiddleware(req, res, (err) => {
+      if (err) {
+        res.status(400).json({ error: err.message || 'Invalid file' });
+        return;
+      }
+      next();
+    });
+  },
+  uploadController.uploadDocument
 );
 
 /** Admins CRUD – requires SYSTEM_MANAGE (super_admin only) */

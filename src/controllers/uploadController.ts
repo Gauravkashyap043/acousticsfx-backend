@@ -84,3 +84,42 @@ export async function uploadImage(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: 'Failed to upload image' });
   }
 }
+
+/**
+ * POST /api/admin/upload-document
+ * Expects multipart/form-data with field "file" (PDF). Returns { url } from ImageKit.
+ */
+export async function uploadDocument(req: Request, res: Response): Promise<void> {
+  try {
+    const client = getImageKitClient();
+    if (!client) {
+      res.status(503).json({ error: 'File upload is not configured (ImageKit)' });
+      return;
+    }
+
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: 'No file provided. Use form field "file".' });
+      return;
+    }
+
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.pdf`;
+    const uploadable = await toFile(file.buffer, fileName, { type: file.mimetype });
+
+    const result = await client.files.upload({
+      file: uploadable,
+      fileName,
+      folder: '/admin/brochures',
+    });
+
+    const url = (result as { url?: string }).url;
+    if (!url) {
+      res.status(500).json({ error: 'Upload succeeded but no URL returned' });
+      return;
+    }
+    res.json({ url });
+  } catch (err) {
+    console.error('uploadDocument error:', err);
+    res.status(500).json({ error: 'Failed to upload document' });
+  }
+}

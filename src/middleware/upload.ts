@@ -18,3 +18,17 @@ export const uploadImageMiddleware = multer({
     }
   },
 }).single('file');
+
+const PDF_TYPE = 'application/pdf';
+
+export const uploadDocumentMiddleware = multer({
+  storage,
+  limits: { fileSize: MAX_SIZE },
+  fileFilter(_req, file, cb) {
+    if (file.mimetype === PDF_TYPE) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Use PDF only.'));
+    }
+  },
+}).single('file');

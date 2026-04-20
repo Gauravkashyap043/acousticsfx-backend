@@ -15,6 +15,7 @@ import type {
   SubProductFinishesSection,
   VisualizerTexture,
   VisualizerDimensions,
+  VisualizerHoleProfile,
 } from '../types/index.js';
 
 const SLUG_REGEX = /^[a-zA-Z0-9-]+$/;
@@ -201,6 +202,82 @@ function normalizeProductSlug(slug: string): string {
   return slug === 'linerlux' ? 'linearlux' : slug;
 }
 
+function num(v: unknown, fallback: number): number {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim()) {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
+class ProductValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ProductValidationError';
+  }
+}
+
+function formatNum(v: number): string {
+  return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(2)));
+}
+
+function normalizeHoleProfileName(rawName: string, hole: number, spacing: number): string {
+  const candidate = rawName.trim();
+  // Always store a canonical label like 9/18x18 so frontend/admin remain consistent.
+  const normalized = `${formatNum(hole)}/${formatNum(spacing)}x${formatNum(spacing)}`;
+  if (!candidate) return normalized;
+  return normalized;
+}
+
+function validateVisualizerHoleProfile(raw: unknown, path: string): VisualizerHoleProfile {
+  if (!raw || typeof raw !== 'object') {
+    throw new ProductValidationError(`${path} must be an object`);
+  }
+  const o = raw as Record<string, unknown>;
+  const name = typeof o.name === 'string' ? o.name.trim() : '';
+  const hole = num(o.hole, NaN);
+  const spacing = num(o.spacing, NaN);
+  const thumbnail =
+    typeof o.thumbnail === 'string' && o.thumbnail.trim() ? o.thumbnail.trim() : undefined;
+  if (!Number.isFinite(hole) || hole <= 0) {
+    throw new ProductValidationError(`${path}.hole must be a positive number`);
+  }
+  if (!Number.isFinite(spacing) || spacing <= 0) {
+    throw new ProductValidationError(`${path}.spacing must be a positive number`);
+  }
+  if (hole >= spacing) {
+    throw new ProductValidationError(
+      `${path} is invalid: hole (${formatNum(hole)}mm) must be smaller than spacing (${formatNum(spacing)}mm)`
+    );
+  }
+  return {
+    name: normalizeHoleProfileName(name, hole, spacing),
+    hole,
+    spacing,
+    thumbnail,
+  };
+}
+
+function validateVisualizerTexture(raw: unknown, path: string): VisualizerTexture {
+  if (!raw || typeof raw !== 'object') {
+    throw new ProductValidationError(`${path} must be an object`);
+  }
+  const o = raw as Record<string, unknown>;
+  const name = typeof o.name === 'string' ? o.name.trim() : '';
+  const image = typeof o.image === 'string' ? o.image.trim() : '';
+  if (!name) throw new ProductValidationError(`${path}.name is required`);
+  if (!image) throw new ProductValidationError(`${path}.image is required`);
+  const profiles: VisualizerHoleProfile[] = [];
+  if (!Array.isArray(o.profiles) || o.profiles.length === 0) {
+    throw new ProductValidationError(`${path}.profiles must contain at least one profile`);
+  }
+  for (let i = 0; i < o.profiles.length; i++) {
+    profiles.push(validateVisualizerHoleProfile(o.profiles[i], `${path}.profiles[${i}]`));
+  }
+  return { name, image, profiles };
+}
+
 /** Optional detail sections (specs, gallery, profiles, …) from request body */
 function applyRichProductFields(
   o: Record<string, unknown>,
@@ -294,24 +371,36 @@ function applyRichProductFields(
 
   if ('visualizerDimensions' in o && o.visualizerDimensions && typeof o.visualizerDimensions === 'object') {
     const vd = o.visualizerDimensions as Record<string, unknown>;
+    const width = num(vd.width, 120);
+    const height = num(vd.height, 60);
+    const depth = num(vd.depth, 4);
     doc.visualizerDimensions = {
-      width: typeof vd.width === 'number' ? vd.width : 120,
-      height: typeof vd.height === 'number' ? vd.height : 60,
-      depth: typeof vd.depth === 'number' ? vd.depth : 4,
+      width: width > 0 ? width : 120,
+      height: height > 0 ? height : 60,
+      depth: depth > 0 ? depth : 4,
     };
+  }
+
+  if ('visualizerTitle' in o) {
+    const t = typeof o.visualizerTitle === 'string' ? o.visualizerTitle.trim() : '';
+    doc.visualizerTitle = t || undefined;
+  }
+  if ('visualizerDescription' in o) {
+    const t = typeof o.visualizerDescription === 'string' ? o.visualizerDescription.trim() : '';
+    doc.visualizerDescription = t || undefined;
+  }
+  if ('visualizerTechnicalCaption' in o) {
+    const t =
+      typeof o.visualizerTechnicalCaption === 'string' ? o.visualizerTechnicalCaption.trim() : '';
+    doc.visualizerTechnicalCaption = t || undefined;
   }
 
   if ('visualizerTextures' in o && Array.isArray(o.visualizerTextures)) {
     const textures: VisualizerTexture[] = [];
-    for (const item of o.visualizerTextures) {
-      if (item && typeof item === 'object') {
-        const to = item as Record<string, unknown>;
-        const name = typeof to.name === 'string' ? to.name.trim() : '';
-        const image = typeof to.image === 'string' ? to.image.trim() : '';
-        if (name && image) {
-          textures.push({ name, image });
-        }
-      }
+    for (let i = 0; i < o.visualizerTextures.length; i++) {
+      const item = o.visualizerTextures[i];
+      const vt = validateVisualizerTexture(item, `visualizerTextures[${i}]`);
+      textures.push(vt);
     }
     doc.visualizerTextures = textures;
   }
@@ -338,6 +427,31 @@ function validateProductDocument(
     typeof body.metaDescription === 'string' ? body.metaDescription.trim() || undefined : undefined;
   const showTrademark = body.showTrademark === true;
 
+  let brochureUrl: string | undefined;
+  if ('brochureUrl' in body) {
+    const raw = body.brochureUrl;
+    if (raw === null || raw === undefined) {
+      brochureUrl = undefined;
+    } else if (typeof raw === 'string') {
+      const t = raw.trim();
+      if (!t) {
+        brochureUrl = undefined;
+      } else {
+        try {
+          const u = new URL(t);
+          if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+            return { error: 'brochureUrl must use http or https' };
+          }
+          brochureUrl = u.href;
+        } catch {
+          return { error: 'brochureUrl must be a valid URL' };
+        }
+      }
+    } else {
+      return { error: 'brochureUrl must be a string' };
+    }
+  }
+
   const doc: Omit<Product, '_id' | 'createdAt' | 'updatedAt'> = {
     slug,
     title,
@@ -350,9 +464,17 @@ function validateProductDocument(
     metaTitle,
     metaDescription,
     showTrademark,
+    brochureUrl,
   };
 
-  applyRichProductFields(body, doc);
+  try {
+    applyRichProductFields(body, doc);
+  } catch (err) {
+    if (err instanceof ProductValidationError) {
+      return { error: err.message };
+    }
+    throw err;
+  }
   return doc;
 }
 
@@ -374,6 +496,7 @@ function productToPublicSummary(p: Product) {
 function productToPublicFull(p: Product) {
   return {
     ...productToPublicSummary(p),
+    brochureUrl: p.brochureUrl,
     specSectionTitle: p.specSectionTitle,
     specDescription: p.specDescription,
     specs: p.specs,
@@ -388,6 +511,9 @@ function productToPublicFull(p: Product) {
     finishesSection: p.finishesSection,
     visualizerTextures: p.visualizerTextures,
     visualizerDimensions: p.visualizerDimensions,
+    visualizerTitle: p.visualizerTitle,
+    visualizerDescription: p.visualizerDescription,
+    visualizerTechnicalCaption: p.visualizerTechnicalCaption,
   };
 }
 
@@ -580,6 +706,7 @@ export async function updateProduct(req: Request, res: Response): Promise<void> 
       createdAt: existing.createdAt,
       updatedAt: now,
     } as Product;
+    delete (next as unknown as Record<string, unknown>).visualizerProfiles;
     delete (next as unknown as Record<string, unknown>).subProducts;
     delete (next as unknown as Record<string, unknown>).panelsSectionTitle;
     delete (next as unknown as Record<string, unknown>).panelsSectionDescription;
